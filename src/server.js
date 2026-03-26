@@ -12,10 +12,9 @@ async function start() {
     app.listen(PORT, "0.0.0.0", () => {
       console.log(`🚀 Server corriendo en puerto ${PORT}`);
     });
-
   } catch (error) {
     console.error("❌ Error al iniciar:", error.message);
-    process.exit(1); // 🔥 importante para Render
+    process.exit(1);
   }
 }
 
