@@ -8,7 +8,7 @@ const {
 
 async function bindDevice(req, res) {
   try {
-    const userId = req.user.id;
+    const userId = req.auth.userId;
     const { deviceHash, deviceName } = req.body;
 
     if (!deviceHash) {
@@ -80,7 +80,7 @@ async function bindDevice(req, res) {
 
 async function checkDevice(req, res) {
   try {
-    const userId = req.user.id;
+    const userId = req.auth.userId;
     const { deviceHash } = req.body;
 
     if (!deviceHash) {
