@@ -5,7 +5,7 @@ const healthRoutes = require("./routes/health.routes");
 const authRoutes = require("./routes/auth.routes");
 const deviceRoutes = require("./routes/device.routes");
 const adminRoutes = require("./routes/admin.routes");
-const authMiddleware = require("./middleware/auth");
+const authMiddleware = require("./middlewares/auth");
 
 const app = express();
 
