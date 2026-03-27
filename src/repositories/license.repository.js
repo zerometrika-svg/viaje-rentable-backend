@@ -2,8 +2,8 @@ const pool = require("../config/db");
 
 async function createLicense(userId, planName, expiresAt) {
   const result = await pool.query(
-    `INSERT INTO licenses (user_id, plan_name, expires_at)
-     VALUES ($1, $2, $3)
+    `INSERT INTO licenses (user_id, plan_name, expires_at, is_active, max_devices)
+     VALUES ($1, $2, $3, true, 1)
      RETURNING *`,
     [userId, planName, expiresAt]
   );
@@ -16,7 +16,7 @@ async function getActiveLicense(userId) {
     `SELECT *
      FROM licenses
      WHERE user_id = $1
-     AND is_active = true
+       AND is_active = true
      ORDER BY expires_at DESC
      LIMIT 1`,
     [userId]
