@@ -8,7 +8,15 @@ const {
 
 async function bindDevice(req, res) {
   try {
-    const userId = req.auth.userId;
+    const userId = req.auth?.userId;
+
+    if (!userId) {
+      return res.status(401).json({
+        ok: false,
+        reason: "unauthorized_user",
+      });
+    }
+
     const { deviceHash, deviceName } = req.body;
 
     if (!deviceHash) {
@@ -80,7 +88,16 @@ async function bindDevice(req, res) {
 
 async function checkDevice(req, res) {
   try {
-    const userId = req.auth.userId;
+    const userId = req.auth?.userId;
+
+    if (!userId) {
+      return res.status(401).json({
+        ok: false,
+        allowed: false,
+        reason: "unauthorized_user",
+      });
+    }
+
     const { deviceHash } = req.body;
 
     if (!deviceHash) {
@@ -95,6 +112,7 @@ async function checkDevice(req, res) {
     if (!license) {
       return res.status(404).json({
         ok: false,
+        allowed: false,
         reason: "no_license",
       });
     }
