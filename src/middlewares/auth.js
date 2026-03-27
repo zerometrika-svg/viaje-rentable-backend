@@ -32,7 +32,7 @@ async function authMiddleware(req, res, next) {
       SELECT
         s.id AS session_id,
         s.user_id,
-        s.token,
+        s.token_hash,
         s.expires_at,
         s.revoked,
         u.id AS user_real_id,
@@ -40,7 +40,7 @@ async function authMiddleware(req, res, next) {
         u.name
       FROM sessions s
       INNER JOIN users u ON u.id = s.user_id
-      WHERE s.token = $1
+      WHERE s.token_hash = $1
       LIMIT 1
       `,
       [token]
@@ -75,7 +75,7 @@ async function authMiddleware(req, res, next) {
     req.auth = {
       sessionId: session.session_id,
       userId: session.user_id,
-      token: session.token,
+      token: session.token_hash,
       expiresAt: session.expires_at,
       user: {
         id: session.user_real_id,
