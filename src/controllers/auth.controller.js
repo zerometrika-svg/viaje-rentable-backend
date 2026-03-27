@@ -1,17 +1,29 @@
-const { getUserByEmail } = require("../repositories/user.repository");
+const {
+  createUser,
+  getUserByEmail,
+} = require("../repositories/user.repository");
+
 const {
   createLoginCode,
   getValidLoginCode,
   markLoginCodeAsUsed,
 } = require("../repositories/loginCode.repository");
+
 const {
   createSession,
-    revokeAllUserSessions,
-  } = require("../repositories/session.repository");
+  revokeAllUserSessions,
+} = require("../repositories/session.repository");
+
+const {
+  createLicense,
+  getActiveLicense,
+} = require("../repositories/license.repository");
+
 const {
   generateCode,
   getCodeExpirationDate,
 } = require("../services/code.service");
+
 const {
   generateSessionToken,
   hashToken,
@@ -29,13 +41,14 @@ async function requestCode(req, res) {
       });
     }
 
-    const user = await getUserByEmail(email);
+    let user = await getUserByEmail(email);
 
+    // 🔥 si no existe, lo creamos automáticamente
     if (!user) {
-      return res.status(404).json({
-        ok: false,
-        reason: "user_not_found",
-      });
+      user = await createUser(email, null);
+
+      // opcional: licencia automática de 30 días para pruebas
+      await createLicense(user.id, "trial", new Date(Date.now() + 30 * 24 * 60 * 60 * 1000));
     }
 
     const code = generateCode();
@@ -46,7 +59,7 @@ async function requestCode(req, res) {
     return res.json({
       ok: true,
       message: "code_generated",
-      testCode: code
+      testCode: code,
     });
   } catch (error) {
     return res.status(500).json({
@@ -76,6 +89,25 @@ async function verifyCode(req, res) {
       });
     }
 
+    const license = await getActiveLicense(user.id);
+
+    if (!license) {
+      return res.status(403).json({
+        ok: false,
+        reason: "no_license",
+      });
+    }
+
+    const now = new Date();
+    const licenseExpired = new Date(license.expires_at) <= now || !license.is_active;
+
+    if (licenseExpired) {
+      return res.status(403).json({
+        ok: false,
+        reason: "license_inactive",
+      });
+    }
+
     const loginCode = await getValidLoginCode(email, code);
 
     if (!loginCode) {
@@ -85,7 +117,6 @@ async function verifyCode(req, res) {
       });
     }
 
-    const now = new Date();
     const isExpired = new Date(loginCode.expires_at) <= now;
 
     if (isExpired) {
@@ -96,7 +127,6 @@ async function verifyCode(req, res) {
     }
 
     await markLoginCodeAsUsed(loginCode.id);
-
     await revokeAllUserSessions(user.id);
 
     const token = generateSessionToken();
