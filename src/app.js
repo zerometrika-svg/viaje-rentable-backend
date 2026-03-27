@@ -11,18 +11,15 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Base
 app.get("/", (req, res) => {
   res.send("Backend funcionando");
 });
 
-// Rutas reales
 app.use("/health", healthRoutes);
 app.use("/auth", authRoutes);
 app.use("/device", deviceRoutes);
 app.use("/admin", adminRoutes);
 
-// 404 final
 app.use((req, res) => {
   res.status(404).json({
     ok: false,

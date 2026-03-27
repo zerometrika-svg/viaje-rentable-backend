@@ -43,12 +43,14 @@ async function requestCode(req, res) {
 
     let user = await getUserByEmail(email);
 
-    // 🔥 si no existe, lo creamos automáticamente
     if (!user) {
       user = await createUser(email, null);
 
-      // opcional: licencia automática de 30 días para pruebas
-      await createLicense(user.id, "trial", new Date(Date.now() + 30 * 24 * 60 * 60 * 1000));
+      await createLicense(
+        user.id,
+        "trial",
+        new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+      );
     }
 
     const code = generateCode();
@@ -99,7 +101,8 @@ async function verifyCode(req, res) {
     }
 
     const now = new Date();
-    const licenseExpired = new Date(license.expires_at) <= now || !license.is_active;
+    const licenseExpired =
+      new Date(license.expires_at) <= now || !license.is_active;
 
     if (licenseExpired) {
       return res.status(403).json({
