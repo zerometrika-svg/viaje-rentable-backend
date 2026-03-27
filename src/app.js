@@ -1,23 +1,35 @@
 const express = require("express");
 const cors = require("cors");
 
-const healthRoutes = require("./routes/health.routes");
-const adminRoutes = require("./routes/admin.routes");
-const deviceRoutes = require("./routes/device.routes");
-const authRoutes = require("./routes/auth.routes");
-
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 
+// TEST
 app.get("/", (req, res) => {
   res.send("Backend funcionando");
 });
 
-app.use("/health", healthRoutes);
-app.use("/admin", adminRoutes);
-app.use("/device", deviceRoutes);
-app.use("/auth", authRoutes);
+app.get("/health", (req, res) => {
+  res.json({ ok: true });
+});
+
+// 🔥 RUTA LOGIN (LA QUE TE FALTA)
+app.post("/auth/request-code", (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({ ok: false, error: "email requerido" });
+  }
+
+  // código fake por ahora
+  const testCode = "123456";
+
+  return res.json({
+    ok: true,
+    testCode
+  });
+});
 
 module.exports = app;
