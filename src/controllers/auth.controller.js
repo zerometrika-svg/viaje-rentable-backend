@@ -1,5 +1,3 @@
-const { Resend } = require("resend");
-
 const {
   createUser,
   getUserByEmail,
@@ -32,10 +30,16 @@ const {
   getSessionExpirationDate,
 } = require("../services/session.service");
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+// 🔥 RESEND SOLO SI EXISTE API KEY
+let resend = null;
 
-// 🔥 IMPORTANTE
-const DEV_MODE = process.env.NODE_ENV !== "production";
+if (process.env.RESEND_API_KEY) {
+  const { Resend } = require("resend");
+  resend = new Resend(process.env.RESEND_API_KEY);
+}
+
+// 🔥 CONTROL REAL DE MODO DESARROLLO
+const DEV_MODE = process.env.USE_FIXED_CODE === "true";
 const DEV_CODE = "123456";
 
 async function requestCode(req, res) {
@@ -67,7 +71,7 @@ async function requestCode(req, res) {
 
     await createLoginCode(email, code, expiresAt);
 
-    // 🔥 En desarrollo NO mandamos mail
+    // 🔥 DEV MODE → NO MAIL
     if (DEV_MODE) {
       return res.json({
         ok: true,
@@ -76,7 +80,15 @@ async function requestCode(req, res) {
       });
     }
 
-    // 🔥 Producción → envío real
+    // 🔥 SI NO HAY RESEND CONFIGURADO
+    if (!resend) {
+      return res.status(500).json({
+        ok: false,
+        reason: "email_not_configured",
+      });
+    }
+
+    // 🔥 ENVÍO REAL
     const { error } = await resend.emails.send({
       from: process.env.EMAIL_FROM,
       to: email,
@@ -92,7 +104,7 @@ async function requestCode(req, res) {
     });
 
     if (error) {
-      console.error("❌ Error email:", error);
+      console.error("❌ Error enviando email:", error);
 
       return res.status(500).json({
         ok: false,
@@ -106,6 +118,8 @@ async function requestCode(req, res) {
     });
 
   } catch (error) {
+    console.error("❌ requestCode:", error);
+
     return res.status(500).json({
       ok: false,
       error: error.message,
@@ -153,7 +167,7 @@ async function verifyCode(req, res) {
       });
     }
 
-    // 🔥 En desarrollo aceptamos código fijo
+    // 🔥 DEV MODE → acepta código fijo sin DB
     if (DEV_MODE && code === DEV_CODE) {
       await revokeAllUserSessions(user.id);
 
@@ -214,6 +228,8 @@ async function verifyCode(req, res) {
     });
 
   } catch (error) {
+    console.error("❌ verifyCode:", error);
+
     return res.status(500).json({
       ok: false,
       error: error.message,
