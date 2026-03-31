@@ -33,11 +33,11 @@ function buildDemoResponse(device, now) {
     demoStartedAt = new Date(now);
   }
 
-  if (!demoExpiresAt) {
+  if (!demoExpiresAt || demoExpiresAt.getTime() < demoStartedAt.getTime()) {
     demoExpiresAt = new Date(demoStartedAt.getTime() + DEMO_DURATION_MS);
   }
 
-  const demoExpired = demoExpiresAt <= now;
+  const demoExpired = now.getTime() >= demoExpiresAt.getTime();
   const demoStatus = demoExpired ? STATUS_DEMO_EXPIRED : STATUS_DEMO_ACTIVE;
 
   return {
@@ -103,8 +103,7 @@ async function bindDevice(req, res) {
       });
     }
 
-    const now = new Date(); // ✅ SOLO UNA VEZ
-
+    const now = new Date();
     const isLicenseValid =
       license.is_active && new Date(license.expires_at) > now;
 
@@ -142,7 +141,7 @@ async function bindDevice(req, res) {
       deviceName || "Unknown Device"
     );
 
-    // ❌ eliminado: const now duplicado
+    const now = new Date();
     await ensureDemo(newDevice, now);
 
     return res.json({
@@ -180,7 +179,6 @@ async function checkDevice(req, res) {
     }
 
     const now = new Date();
-
     const license = await getActiveLicense(userId);
     const isLicenseValid =
       license && license.is_active && new Date(license.expires_at) > now;
@@ -203,13 +201,11 @@ async function checkDevice(req, res) {
 
     const demoResult = await ensureDemo(device, now);
     const demo = demoResult ? demoResult.demo : null;
-
     const demoActive = demo ? demo.demoStatus === STATUS_DEMO_ACTIVE : false;
     const demoExpired = demo ? demo.demoStatus === STATUS_DEMO_EXPIRED : false;
     const demoLicense = demo ? demo.demoStatus === STATUS_LICENSE_ACTIVE : false;
 
     const allowed = isLicenseValid || demoActive || demoLicense;
-
     let reason = null;
     if (!allowed && demoExpired) reason = "demo_expired";
     if (!allowed && !demoExpired && !isLicenseValid) reason = "license_inactive";
