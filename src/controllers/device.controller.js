@@ -119,10 +119,12 @@ async function bindDevice(req, res) {
     if (existingDevice) {
       await touchDevice(existingDevice.id);
 
+      const ensuredExisting = await ensureDemo(existingDevice, now);
+
       return res.json({
         ok: true,
         message: "device_already_bound",
-        device: existingDevice,
+        device: ensuredExisting ? ensuredExisting.device : existingDevice,
       });
     }
 
@@ -141,13 +143,12 @@ async function bindDevice(req, res) {
       deviceName || "Unknown Device"
     );
 
-    const now = new Date();
-    await ensureDemo(newDevice, now);
+    const ensuredNewDevice = await ensureDemo(newDevice, now);
 
     return res.json({
       ok: true,
       message: "device_bound",
-      device: newDevice,
+      device: ensuredNewDevice ? ensuredNewDevice.device : newDevice,
     });
   } catch (error) {
     return res.status(500).json({
@@ -207,6 +208,7 @@ async function checkDevice(req, res) {
 
     const allowed = isLicenseValid || demoActive || demoLicense;
     let reason = null;
+
     if (!allowed && demoExpired) reason = "demo_expired";
     if (!allowed && !demoExpired && !isLicenseValid) reason = "license_inactive";
 
