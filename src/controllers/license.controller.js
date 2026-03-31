@@ -20,7 +20,9 @@ async function activateLicense(req, res) {
       });
     }
 
-    const { code, deviceHash, deviceName } = req.body;
+    const code = req.body?.code;
+    const deviceHash = req.body?.deviceHash || req.body?.device_hash;
+    const deviceName = req.body?.deviceName || req.body?.device_name;
 
     if (!code || !deviceHash) {
       return res.status(400).json({

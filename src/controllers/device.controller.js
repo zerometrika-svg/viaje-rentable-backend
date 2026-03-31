@@ -85,7 +85,8 @@ async function bindDevice(req, res) {
       });
     }
 
-    const { deviceHash, deviceName } = req.body;
+    const deviceHash = req.body?.deviceHash || req.body?.device_hash;
+    const deviceName = req.body?.deviceName || req.body?.device_name;
 
     if (!deviceHash) {
       return res.status(400).json({
@@ -170,7 +171,7 @@ async function checkDevice(req, res) {
       });
     }
 
-    const { deviceHash } = req.body;
+    const deviceHash = req.body?.deviceHash || req.body?.device_hash;
 
     if (!deviceHash) {
       return res.status(400).json({
