@@ -14,6 +14,12 @@ const DEMO_DURATION_DAYS = 7;
 const STATUS_DEMO_ACTIVE = "DEMO_ACTIVA";
 const STATUS_DEMO_EXPIRED = "DEMO_EXPIRADA";
 const STATUS_LICENSE_ACTIVE = "LICENCIA_ACTIVA";
+const DEMO_LOG_TAG = "DEMO_FLOW";
+
+function logDemoFlow(message, payload) {
+  const suffix = payload ? ` ${JSON.stringify(payload)}` : "";
+  console.log(`[${DEMO_LOG_TAG}] ${message}${suffix}`);
+}
 
 function parseDbTimestamp(value) {
   if (!value) return null;
@@ -24,7 +30,7 @@ function parseDbTimestamp(value) {
     const hasTz = /Z$|[+-]\d{2}:\d{2}$/.test(trimmed);
     const normalized = hasTz
       ? trimmed
-      : `${trimmed.replace(" ", "T")}Z`;
+      : trimmed.replace(" ", "T");
     const parsed = new Date(normalized);
     return Number.isNaN(parsed.getTime()) ? null : parsed;
   }
@@ -187,6 +193,11 @@ async function checkDevice(req, res) {
     const deviceHash = req.body?.deviceHash || req.body?.device_hash;
     const deviceName = req.body?.deviceName || req.body?.device_name;
     const androidId = req.body?.androidId || req.body?.android_id;
+    logDemoFlow("device/check request", {
+      device_hash: deviceHash || null,
+      device_name: deviceName || null,
+      android_id: androidId || null,
+    });
     console.log(
       `[DEVICE_CHECK] ${req.method} ${req.originalUrl} deviceHash=${deviceHash ? "yes" : "no"}`
     );
@@ -202,12 +213,18 @@ async function checkDevice(req, res) {
     const device = await getDeviceByHash(deviceHash);
 
     if (!device) {
-      return res.json({
+      const response = {
         ok: true,
         allowed: false,
         reason: "no_demo_started",
         serverTime: now.toISOString(),
+      };
+      logDemoFlow("device/check response", {
+        device_hash: deviceHash,
+        statusCode: 200,
+        response,
       });
+      return res.json(response);
     }
 
     const userId = device.user_id;
@@ -230,6 +247,16 @@ async function checkDevice(req, res) {
     const demoExpired = demo ? demo.demoStatus === STATUS_DEMO_EXPIRED : false;
     const demoLicense = demo ? demo.demoStatus === STATUS_LICENSE_ACTIVE : false;
 
+    logDemoFlow("device/check demo timestamps", {
+      device_hash: deviceHash,
+      raw_demo_started_at: device.demo_started_at || null,
+      raw_demo_expires_at: device.demo_expires_at || null,
+      parsed_demo_started_at: demo ? demo.demoStartedAt : null,
+      parsed_demo_expires_at: demo ? demo.demoExpiresAt : null,
+      now: now,
+      demoExpired,
+    });
+
     const allowed = isLicenseValid || demoActive || demoLicense;
     let reason = null;
 
@@ -237,9 +264,18 @@ async function checkDevice(req, res) {
     if (!allowed && !demoExpired && !demo) reason = "no_demo_started";
     if (!allowed && demo && !demoExpired && !isLicenseValid) reason = "license_inactive";
 
-    return res.json(
-      buildCheckResponse({ device, license, demo, allowed, reason, now })
-    );
+    const response = buildCheckResponse({ device, license, demo, allowed, reason, now });
+    logDemoFlow("device/check response", {
+      device_hash: deviceHash,
+      statusCode: 200,
+      allowed,
+      reason,
+      demo_status: demo ? demo.demoStatus : null,
+      demo_started_at: demo ? demo.demoStartedAt : null,
+      demo_expires_at: demo ? demo.demoExpiresAt : null,
+      response,
+    });
+    return res.json(response);
   } catch (error) {
     return res.status(500).json({
       ok: false,
@@ -253,6 +289,11 @@ async function startDemo(req, res) {
     const deviceHash = req.body?.deviceHash || req.body?.device_hash;
     const deviceName = req.body?.deviceName || req.body?.device_name;
     const androidId = req.body?.androidId || req.body?.android_id;
+    logDemoFlow("device/start-demo request", {
+      device_hash: deviceHash || null,
+      device_name: deviceName || null,
+      android_id: androidId || null,
+    });
 
     if (!deviceHash) {
       return res.status(400).json({
@@ -291,31 +332,49 @@ async function startDemo(req, res) {
       const demoLicense = existingDemo.demoStatus === STATUS_LICENSE_ACTIVE;
       const allowed = isLicenseValid || demoActive || demoLicense;
       const reason = !allowed && demoExpired ? "demo_expired" : null;
-      return res.json(
-        buildCheckResponse({
-          device,
-          license,
-          demo: existingDemo,
-          allowed,
-          reason,
-          now,
-        })
-      );
+      const response = buildCheckResponse({
+        device,
+        license,
+        demo: existingDemo,
+        allowed,
+        reason,
+        now,
+      });
+      logDemoFlow("device/start-demo response (existing)", {
+        device_hash: deviceHash,
+        statusCode: 200,
+        allowed,
+        reason,
+        demo_status: existingDemo.demoStatus,
+        demo_started_at: existingDemo.demoStartedAt,
+        demo_expires_at: existingDemo.demoExpiresAt,
+        response,
+      });
+      return res.json(response);
     }
 
     const updated = await initializeDemoForDevice(device);
     const demo = buildDemoResponse(updated, now);
 
-    return res.json(
-      buildCheckResponse({
-        device: updated,
-        license,
-        demo,
-        allowed: true,
-        reason: null,
-        now,
-      })
-    );
+    const response = buildCheckResponse({
+      device: updated,
+      license,
+      demo,
+      allowed: true,
+      reason: null,
+      now,
+    });
+    logDemoFlow("device/start-demo response (new)", {
+      device_hash: deviceHash,
+      statusCode: 200,
+      allowed: true,
+      reason: null,
+      demo_status: demo ? demo.demoStatus : null,
+      demo_started_at: demo ? demo.demoStartedAt : null,
+      demo_expires_at: demo ? demo.demoExpiresAt : null,
+      response,
+    });
+    return res.json(response);
   } catch (error) {
     return res.status(500).json({
       ok: false,
