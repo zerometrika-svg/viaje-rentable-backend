@@ -15,13 +15,29 @@ const STATUS_DEMO_ACTIVE = "DEMO_ACTIVA";
 const STATUS_DEMO_EXPIRED = "DEMO_EXPIRADA";
 const STATUS_LICENSE_ACTIVE = "LICENCIA_ACTIVA";
 
+function parseDbTimestamp(value) {
+  if (!value) return null;
+  if (value instanceof Date) return value;
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+    const hasTz = /Z$|[+-]\d{2}:\d{2}$/.test(trimmed);
+    const normalized = hasTz
+      ? trimmed
+      : `${trimmed.replace(" ", "T")}Z`;
+    const parsed = new Date(normalized);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }
+  return null;
+}
+
 function buildDemoResponse(device, now) {
   if (!device) return null;
 
   if (device.demo_status === STATUS_LICENSE_ACTIVE) {
     return {
-      demoStartedAt: device.demo_started_at ? new Date(device.demo_started_at) : null,
-      demoExpiresAt: device.demo_expires_at ? new Date(device.demo_expires_at) : null,
+      demoStartedAt: parseDbTimestamp(device.demo_started_at),
+      demoExpiresAt: parseDbTimestamp(device.demo_expires_at),
       demoStatus: STATUS_LICENSE_ACTIVE,
     };
   }
@@ -30,8 +46,9 @@ function buildDemoResponse(device, now) {
     return null;
   }
 
-  const demoStartedAt = new Date(device.demo_started_at);
-  const demoExpiresAt = new Date(device.demo_expires_at);
+  const demoStartedAt = parseDbTimestamp(device.demo_started_at);
+  const demoExpiresAt = parseDbTimestamp(device.demo_expires_at);
+  if (!demoStartedAt || !demoExpiresAt) return null;
   const demoExpired = now.getTime() >= demoExpiresAt.getTime();
   const demoStatus = demoExpired ? STATUS_DEMO_EXPIRED : STATUS_DEMO_ACTIVE;
 
