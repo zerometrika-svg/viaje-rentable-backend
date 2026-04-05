@@ -10,13 +10,15 @@ const {
 } = require("../repositories/device.repository");
 const { createUser, getUserByEmail } = require("../repositories/user.repository");
 
-const DEMO_DURATION_MS = 24 * 60 * 60 * 1000;
+const DEMO_DURATION_DAYS = 7;
 const STATUS_DEMO_ACTIVE = "DEMO_ACTIVA";
 const STATUS_DEMO_EXPIRED = "DEMO_EXPIRADA";
 const STATUS_LICENSE_ACTIVE = "LICENCIA_ACTIVA";
 
 function buildDemoResponse(device, now) {
-  if (device?.demo_status === STATUS_LICENSE_ACTIVE) {
+  if (!device) return null;
+
+  if (device.demo_status === STATUS_LICENSE_ACTIVE) {
     return {
       demoStartedAt: device.demo_started_at ? new Date(device.demo_started_at) : null,
       demoExpiresAt: device.demo_expires_at ? new Date(device.demo_expires_at) : null,
@@ -24,21 +26,12 @@ function buildDemoResponse(device, now) {
     };
   }
 
-  let demoStartedAt = device?.demo_started_at
-    ? new Date(device.demo_started_at)
-    : null;
-  let demoExpiresAt = device?.demo_expires_at
-    ? new Date(device.demo_expires_at)
-    : null;
-
-  if (!demoStartedAt) {
-    demoStartedAt = new Date(now);
+  if (!device.demo_started_at || !device.demo_expires_at) {
+    return null;
   }
 
-  if (!demoExpiresAt || demoExpiresAt.getTime() < demoStartedAt.getTime()) {
-    demoExpiresAt = new Date(demoStartedAt.getTime() + DEMO_DURATION_MS);
-  }
-
+  const demoStartedAt = new Date(device.demo_started_at);
+  const demoExpiresAt = new Date(device.demo_expires_at);
   const demoExpired = now.getTime() >= demoExpiresAt.getTime();
   const demoStatus = demoExpired ? STATUS_DEMO_EXPIRED : STATUS_DEMO_ACTIVE;
 
@@ -49,31 +42,12 @@ function buildDemoResponse(device, now) {
   };
 }
 
-async function ensureDemo(device, now) {
-  if (!device) return null;
+async function initializeDemoForDevice(device) {
+  const now = new Date();
+  const expires = new Date(now);
+  expires.setDate(now.getDate() + DEMO_DURATION_DAYS);
 
-  const demoData = buildDemoResponse(device, now);
-
-  if (device.demo_status === STATUS_LICENSE_ACTIVE) {
-    return { device, demo: demoData };
-  }
-
-  const needsUpdate =
-    !device.demo_started_at ||
-    !device.demo_expires_at ||
-    device.demo_status !== demoData.demoStatus;
-
-  if (needsUpdate) {
-    const updated = await updateDeviceDemo(
-      device.id,
-      demoData.demoStartedAt,
-      demoData.demoExpiresAt,
-      demoData.demoStatus
-    );
-    return { device: updated, demo: demoData };
-  }
-
-  return { device, demo: demoData };
+  return updateDeviceDemo(device.id, now, expires, STATUS_DEMO_ACTIVE);
 }
 
 async function bindDevice(req, res) {
@@ -122,12 +96,13 @@ async function bindDevice(req, res) {
     if (existingDevice) {
       await touchDevice(existingDevice.id);
 
-      const ensuredExisting = await ensureDemo(existingDevice, now);
+      const demo = buildDemoResponse(existingDevice, now);
 
       return res.json({
         ok: true,
         message: "device_already_bound",
-        device: ensuredExisting ? ensuredExisting.device : existingDevice,
+        device: existingDevice,
+        demo,
       });
     }
 
@@ -146,12 +121,14 @@ async function bindDevice(req, res) {
       deviceName || "Unknown Device"
     );
 
-    const ensuredNewDevice = await ensureDemo(newDevice, now);
+    const ensuredNewDevice = await initializeDemoForDevice(newDevice);
+    const demo = buildDemoResponse(ensuredNewDevice, now);
 
     return res.json({
       ok: true,
       message: "device_bound",
-      device: ensuredNewDevice ? ensuredNewDevice.device : newDevice,
+      device: ensuredNewDevice || newDevice,
+      demo,
     });
   } catch (error) {
     return res.status(500).json({
@@ -189,11 +166,12 @@ async function checkDevice(req, res) {
         user = await createUser(email, deviceName || "Device");
       }
       userId = user.id;
-      device = await createDevice(
+      const created = await createDevice(
         userId,
         deviceHash,
         deviceName || "Unknown Device"
       );
+      device = await initializeDemoForDevice(created);
     }
 
     const license = userId ? await getActiveLicense(userId) : null;
@@ -210,8 +188,7 @@ async function checkDevice(req, res) {
 
     await touchDevice(device.id);
 
-    const demoResult = await ensureDemo(device, now);
-    const demo = demoResult ? demoResult.demo : null;
+    const demo = buildDemoResponse(device, now);
     const demoActive = demo ? demo.demoStatus === STATUS_DEMO_ACTIVE : false;
     const demoExpired = demo ? demo.demoStatus === STATUS_DEMO_EXPIRED : false;
     const demoLicense = demo ? demo.demoStatus === STATUS_LICENSE_ACTIVE : false;
@@ -230,7 +207,7 @@ async function checkDevice(req, res) {
       demo_started_at: demo ? demo.demoStartedAt : null,
       demo_expires_at: demo ? demo.demoExpiresAt : null,
       premium_active: !!isLicenseValid,
-      device: demoResult ? demoResult.device : device,
+      device,
       license: license
         ? {
             plan: license.plan_name,
