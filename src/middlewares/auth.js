@@ -4,6 +4,9 @@ const { hashToken } = require("../services/session.service");
 async function authMiddleware(req, res, next) {
   try {
     const authHeader = req.headers.authorization;
+    console.log(
+      `[AUTH] ${req.method} ${req.originalUrl} header=${authHeader ? "yes" : "no"}`
+    );
 
     if (!authHeader) {
       return res.status(401).json({

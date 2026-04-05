@@ -1,9 +1,11 @@
 const { getActiveLicense, createLicense } = require("../repositories/license.repository");
 const {
   getDeviceByUserIdAndHash,
+  getDeviceByHash,
   createDevice,
   updateDeviceDemoStatus,
 } = require("../repositories/device.repository");
+const { createUser, getUserByEmail } = require("../repositories/user.repository");
 
 const ADMIN_CODE = "9410123";
 const ADMIN_LICENSE_DAYS = 3650;
@@ -11,18 +13,10 @@ const STATUS_LICENSE_ACTIVE = "LICENCIA_ACTIVA";
 
 async function activateLicense(req, res) {
   try {
-    const userId = req.auth?.userId;
-
-    if (!userId) {
-      return res.status(401).json({
-        ok: false,
-        reason: "unauthorized_user",
-      });
-    }
-
-    const code = req.body?.code;
+    const code = req.body?.license_code || req.body?.code;
     const deviceHash = req.body?.deviceHash || req.body?.device_hash;
     const deviceName = req.body?.deviceName || req.body?.device_name;
+    const androidId = req.body?.androidId || req.body?.android_id;
 
     if (!code || !deviceHash) {
       return res.status(400).json({
@@ -43,6 +37,19 @@ async function activateLicense(req, res) {
       now.getTime() + ADMIN_LICENSE_DAYS * 24 * 60 * 60 * 1000
     );
 
+    const device = await getDeviceByHash(deviceHash);
+
+    let userId = device?.user_id || null;
+    if (!userId) {
+      const fallbackId = androidId || deviceHash;
+      const email = `device_${fallbackId}@devices.local`;
+      let user = await getUserByEmail(email);
+      if (!user) {
+        user = await createUser(email, deviceName || "Device");
+      }
+      userId = user.id;
+    }
+
     let license = await getActiveLicense(userId);
     const licenseExpired =
       !license || !license.is_active || new Date(license.expires_at) <= now;
@@ -53,7 +60,11 @@ async function activateLicense(req, res) {
 
     const existingDevice = await getDeviceByUserIdAndHash(userId, deviceHash);
     if (!existingDevice) {
-      const created = await createDevice(userId, deviceHash, deviceName || "Unknown Device");
+      const created = await createDevice(
+        userId,
+        deviceHash,
+        deviceName || "Unknown Device"
+      );
       await updateDeviceDemoStatus(created.id, STATUS_LICENSE_ACTIVE);
     } else {
       await updateDeviceDemoStatus(existingDevice.id, STATUS_LICENSE_ACTIVE);

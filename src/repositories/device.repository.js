@@ -22,6 +22,17 @@ async function getDeviceByUserIdAndHash(userId, deviceHash) {
   return result.rows[0];
 }
 
+async function getDeviceByHash(deviceHash) {
+  const result = await pool.query(
+    `SELECT * FROM devices
+     WHERE device_hash = $1
+     LIMIT 1`,
+    [deviceHash]
+  );
+
+  return result.rows[0];
+}
+
 async function createDevice(userId, deviceHash, deviceName) {
   const result = await pool.query(
     `INSERT INTO devices (user_id, device_hash, device_name)
@@ -74,6 +85,7 @@ async function touchDevice(deviceId) {
 module.exports = {
   getDevicesByUserId,
   getDeviceByUserIdAndHash,
+  getDeviceByHash,
   createDevice,
   updateDeviceDemo,
   updateDeviceDemoStatus,

@@ -2,11 +2,13 @@ const { getActiveLicense } = require("../repositories/license.repository");
 const {
   getDevicesByUserId,
   getDeviceByUserIdAndHash,
+  getDeviceByHash,
   createDevice,
   updateDeviceDemo,
   updateDeviceDemoStatus,
   touchDevice,
 } = require("../repositories/device.repository");
+const { createUser, getUserByEmail } = require("../repositories/user.repository");
 
 const DEMO_DURATION_MS = 24 * 60 * 60 * 1000;
 const STATUS_DEMO_ACTIVE = "DEMO_ACTIVA";
@@ -161,17 +163,12 @@ async function bindDevice(req, res) {
 
 async function checkDevice(req, res) {
   try {
-    const userId = req.auth?.userId;
-
-    if (!userId) {
-      return res.status(401).json({
-        ok: false,
-        allowed: false,
-        reason: "unauthorized_user",
-      });
-    }
-
     const deviceHash = req.body?.deviceHash || req.body?.device_hash;
+    const deviceName = req.body?.deviceName || req.body?.device_name;
+    const androidId = req.body?.androidId || req.body?.android_id;
+    console.log(
+      `[DEVICE_CHECK] ${req.method} ${req.originalUrl} deviceHash=${deviceHash ? "yes" : "no"}`
+    );
 
     if (!deviceHash) {
       return res.status(400).json({
@@ -181,15 +178,27 @@ async function checkDevice(req, res) {
     }
 
     const now = new Date();
-    const license = await getActiveLicense(userId);
-    const isLicenseValid =
-      license && license.is_active && new Date(license.expires_at) > now;
-
-    let device = await getDeviceByUserIdAndHash(userId, deviceHash);
+    let device = await getDeviceByHash(deviceHash);
+    let userId = device?.user_id || null;
 
     if (!device) {
-      device = await createDevice(userId, deviceHash, "Unknown Device");
+      const fallbackId = androidId || deviceHash;
+      const email = `device_${fallbackId}@devices.local`;
+      let user = await getUserByEmail(email);
+      if (!user) {
+        user = await createUser(email, deviceName || "Device");
+      }
+      userId = user.id;
+      device = await createDevice(
+        userId,
+        deviceHash,
+        deviceName || "Unknown Device"
+      );
     }
+
+    const license = userId ? await getActiveLicense(userId) : null;
+    const isLicenseValid =
+      license && license.is_active && new Date(license.expires_at) > now;
 
     if (!device.is_active) {
       return res.status(403).json({
@@ -217,6 +226,10 @@ async function checkDevice(req, res) {
       ok: true,
       allowed,
       reason,
+      demo_status: demo ? demo.demoStatus : null,
+      demo_started_at: demo ? demo.demoStartedAt : null,
+      demo_expires_at: demo ? demo.demoExpiresAt : null,
+      premium_active: !!isLicenseValid,
       device: demoResult ? demoResult.device : device,
       license: license
         ? {

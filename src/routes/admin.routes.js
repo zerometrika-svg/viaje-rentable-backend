@@ -6,9 +6,11 @@ const {
   createUserWithLicense,
   checkLicense,
 } = require("../controllers/admin.controller");
+const { generateCodes } = require("../controllers/licenseCode.controller");
 
 router.post("/create-user", createUserWithLicense);
 router.post("/check-license", checkLicense);
+router.post("/generate-codes", generateCodes);
 
 router.get("/me", authMiddleware, (req, res) => {
   return res.json({
