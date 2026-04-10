@@ -86,7 +86,7 @@ async function getAllDevices() {
   const result = await pool.query(
     `SELECT *
      FROM devices
-     ORDER BY created_at DESC`
+     ORDER BY id DESC`
   );
 
   return result.rows;
