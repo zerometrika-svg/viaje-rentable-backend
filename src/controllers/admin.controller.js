@@ -6,7 +6,10 @@ const {
 const {
   createLicense,
   getActiveLicense,
+  getAllLicenses,
 } = require("../repositories/license.repository");
+
+const { getAllDevices } = require("../repositories/device.repository");
 
 async function createUserWithLicense(req, res) {
   try {
@@ -72,7 +75,39 @@ async function checkLicense(req, res) {
   }
 }
 
+async function listLicenses(req, res) {
+  try {
+    const licenses = await getAllLicenses();
+    return res.json({
+      ok: true,
+      data: licenses,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      ok: false,
+      error: error.message,
+    });
+  }
+}
+
+async function listDevices(req, res) {
+  try {
+    const devices = await getAllDevices();
+    return res.json({
+      ok: true,
+      data: devices,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      ok: false,
+      error: error.message,
+    });
+  }
+}
+
 module.exports = {
   createUserWithLicense,
   checkLicense,
+  listLicenses,
+  listDevices,
 };

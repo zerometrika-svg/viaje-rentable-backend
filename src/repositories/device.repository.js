@@ -82,6 +82,16 @@ async function touchDevice(deviceId) {
   return result.rows[0];
 }
 
+async function getAllDevices() {
+  const result = await pool.query(
+    `SELECT *
+     FROM devices
+     ORDER BY created_at DESC`
+  );
+
+  return result.rows;
+}
+
 module.exports = {
   getDevicesByUserId,
   getDeviceByUserIdAndHash,
@@ -90,4 +100,5 @@ module.exports = {
   updateDeviceDemo,
   updateDeviceDemoStatus,
   touchDevice,
+  getAllDevices,
 };

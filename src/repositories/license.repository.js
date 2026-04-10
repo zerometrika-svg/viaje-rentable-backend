@@ -25,7 +25,18 @@ async function getActiveLicense(userId) {
   return result.rows[0];
 }
 
+async function getAllLicenses() {
+  const result = await pool.query(
+    `SELECT *
+     FROM licenses
+     ORDER BY created_at DESC`
+  );
+
+  return result.rows;
+}
+
 module.exports = {
   createLicense,
   getActiveLicense,
+  getAllLicenses,
 };
