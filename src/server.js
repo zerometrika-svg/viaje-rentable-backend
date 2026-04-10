@@ -7,6 +7,7 @@ const PORT = process.env.PORT || 3000;
 async function start() {
   try {
     await pool.query("SELECT 1");
+    console.log("Servidor de APKs activo en /apks");
     console.log("✅ DB conectada");
 
     app.listen(PORT, "0.0.0.0", () => {
