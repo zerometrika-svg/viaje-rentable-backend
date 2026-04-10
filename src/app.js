@@ -7,6 +7,7 @@ const deviceRoutes = require("./routes/device.routes");
 const adminRoutes = require("./routes/admin.routes");
 const licenseRoutes = require("./routes/license.routes");
 const authMiddleware = require("./middlewares/auth");
+const appRoutes = require('./routes/appRoutes');
 
 const app = express();
 
@@ -33,6 +34,7 @@ app.use("/auth", authRoutes);
 app.use("/device", deviceRoutes);
 app.use("/admin", adminRoutes);
 app.use("/license", licenseRoutes);
+app.use('/app', appRoutes);
 
 app.use((req, res) => {
   res.status(404).json({
