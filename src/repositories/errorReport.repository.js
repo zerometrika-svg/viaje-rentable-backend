@@ -7,9 +7,14 @@ async function createErrorReport(data) {
       description,
       app_version,
       device_hash,
-      device_name
+      device_name,
+      android_version,
+      country,
+      screen,
+      source,
+      user_email
     )
-    VALUES ($1, $2, $3, $4, $5)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
     RETURNING *`,
     [
       data.error_type,
@@ -17,6 +22,11 @@ async function createErrorReport(data) {
       data.app_version ?? null,
       data.device_hash ?? null,
       data.device_name ?? null,
+      data.android_version ?? null,
+      data.country ?? null,
+      data.screen ?? null,
+      data.source ?? null,
+      data.user_email ?? null,
     ]
   );
 

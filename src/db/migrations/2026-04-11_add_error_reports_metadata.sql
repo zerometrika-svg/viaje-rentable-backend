@@ -1,0 +1,15 @@
+ALTER TABLE error_reports
+  ADD COLUMN IF NOT EXISTS android_version VARCHAR(32);
+
+ALTER TABLE error_reports
+  ADD COLUMN IF NOT EXISTS country VARCHAR(8);
+
+ALTER TABLE error_reports
+  ADD COLUMN IF NOT EXISTS screen VARCHAR(64);
+
+ALTER TABLE error_reports
+  ADD COLUMN IF NOT EXISTS source VARCHAR(32) NOT NULL DEFAULT 'manual_report';
+
+ALTER TABLE error_reports
+  ADD COLUMN IF NOT EXISTS user_email VARCHAR(255);
+
