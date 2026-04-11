@@ -7,19 +7,15 @@ const {
   deleteAllErrorReports,
 } = require("../repositories/errorReport.repository");
 
-const ALLOWED_ERROR_TYPES = new Set([
-  "se_cierra_sola",
+const ALLOWED_ERROR_TYPES = [
+  "se_cierra",
   "overlay",
   "historial",
   "graficos",
-  "licencia",
-  "demo",
-  "login",
-  "actualizacion",
-  "rendimiento",
+  "lectura",
   "manual_report",
   "otro",
-]);
+];
 
 const ALLOWED_SOURCES = new Set([
   "manual_report",
@@ -35,10 +31,17 @@ function normalizeString(value) {
 }
 
 function normalizeErrorType(raw) {
-  const value = normalizeString(raw);
-  if (!value) return "otro";
-  const normalized = value.toLowerCase().trim();
-  return ALLOWED_ERROR_TYPES.has(normalized) ? normalized : "otro";
+  let errorType = (raw || "").trim().toLowerCase();
+
+  if (errorType === "se_cierra_sola" || errorType === "se cierra la app") {
+    errorType = "se_cierra";
+  }
+
+  if (!ALLOWED_ERROR_TYPES.includes(errorType)) {
+    errorType = "otro";
+  }
+
+  return errorType;
 }
 
 function normalizeSource(raw) {
