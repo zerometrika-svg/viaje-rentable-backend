@@ -55,8 +55,36 @@ async function markErrorReportReviewed(id) {
   return result.rows[0] || null;
 }
 
+async function deleteErrorReportById(id) {
+  const result = await pool.query(
+    `DELETE FROM error_reports
+     WHERE id = $1
+     RETURNING *`,
+    [id]
+  );
+
+  return result.rows[0] || null;
+}
+
+async function deleteReviewedErrorReports() {
+  const result = await pool.query(
+    `DELETE FROM error_reports
+     WHERE status = 'reviewed' OR status = 'revisado'`
+  );
+
+  return result.rowCount || 0;
+}
+
+async function deleteAllErrorReports() {
+  const result = await pool.query(`DELETE FROM error_reports`);
+  return result.rowCount || 0;
+}
+
 module.exports = {
   createErrorReport,
   getAllErrorReports,
   markErrorReportReviewed,
+  deleteErrorReportById,
+  deleteReviewedErrorReports,
+  deleteAllErrorReports,
 };

@@ -2,6 +2,9 @@ const {
   createErrorReport,
   getAllErrorReports,
   markErrorReportReviewed,
+  deleteErrorReportById,
+  deleteReviewedErrorReports,
+  deleteAllErrorReports,
 } = require("../repositories/errorReport.repository");
 
 const ALLOWED_ERROR_TYPES = new Set([
@@ -139,8 +142,61 @@ async function reviewErrorReport(req, res) {
   }
 }
 
+async function deleteErrorReport(req, res) {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (!Number.isFinite(id)) {
+      return res.status(400).json({ ok: false, error: "invalid_id" });
+    }
+
+    const deleted = await deleteErrorReportById(id);
+    if (!deleted) {
+      return res.status(404).json({ ok: false, error: "error_report_not_found" });
+    }
+
+    return res.json({ ok: true, data: deleted });
+  } catch (error) {
+    return res.status(500).json({
+      ok: false,
+      error: error.message,
+    });
+  }
+}
+
+async function deleteReviewedErrors(req, res) {
+  try {
+    const deletedCount = await deleteReviewedErrorReports();
+    return res.json({ ok: true, deleted: deletedCount });
+  } catch (error) {
+    return res.status(500).json({
+      ok: false,
+      error: error.message,
+    });
+  }
+}
+
+async function deleteAllErrors(req, res) {
+  try {
+    const confirm = req.body?.confirm;
+    if (confirm !== "DELETE_ALL_ERRORS") {
+      return res.status(400).json({ ok: false, error: "confirmation_required" });
+    }
+
+    const deletedCount = await deleteAllErrorReports();
+    return res.json({ ok: true, data: { deletedCount } });
+  } catch (error) {
+    return res.status(500).json({
+      ok: false,
+      error: error.message,
+    });
+  }
+}
+
 module.exports = {
   reportError,
   listErrorReports,
   reviewErrorReport,
+  deleteErrorReport,
+  deleteReviewedErrors,
+  deleteAllErrors,
 };
