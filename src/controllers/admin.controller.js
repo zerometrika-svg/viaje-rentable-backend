@@ -7,9 +7,13 @@ const {
   createLicense,
   getActiveLicense,
   getAllLicenses,
+  toggleLicense: toggleLicenseRepo,
 } = require("../repositories/license.repository");
 
-const { getAllDevices } = require("../repositories/device.repository");
+const {
+  getAllDevices,
+  toggleDevice: toggleDeviceRepo,
+} = require("../repositories/device.repository");
 
 async function createUserWithLicense(req, res) {
   try {
@@ -105,9 +109,53 @@ async function listDevices(req, res) {
   }
 }
 
+async function toggleLicense(req, res) {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (!Number.isFinite(id)) {
+      return res.status(400).json({ ok: false, error: "invalid_id" });
+    }
+
+    const updated = await toggleLicenseRepo(id);
+    if (!updated) {
+      return res.status(404).json({ ok: false, error: "license_not_found" });
+    }
+
+    return res.json({ ok: true, data: updated });
+  } catch (error) {
+    return res.status(500).json({
+      ok: false,
+      error: error.message,
+    });
+  }
+}
+
+async function toggleDevice(req, res) {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (!Number.isFinite(id)) {
+      return res.status(400).json({ ok: false, error: "invalid_id" });
+    }
+
+    const updated = await toggleDeviceRepo(id);
+    if (!updated) {
+      return res.status(404).json({ ok: false, error: "device_not_found" });
+    }
+
+    return res.json({ ok: true, data: updated });
+  } catch (error) {
+    return res.status(500).json({
+      ok: false,
+      error: error.message,
+    });
+  }
+}
+
 module.exports = {
   createUserWithLicense,
   checkLicense,
   listLicenses,
   listDevices,
+  toggleLicense,
+  toggleDevice,
 };

@@ -7,6 +7,8 @@ const {
   checkLicense,
   listLicenses,
   listDevices,
+  toggleLicense,
+  toggleDevice,
 } = require("../controllers/admin.controller");
 const { generateCodes } = require("../controllers/licenseCode.controller");
 
@@ -16,6 +18,8 @@ router.post("/generate-codes", generateCodes);
 
 router.get("/licenses", listLicenses);
 router.get("/devices", listDevices);
+router.post("/licenses/:id/toggle", toggleLicense);
+router.post("/devices/:id/toggle", toggleDevice);
 
 router.get("/me", authMiddleware, (req, res) => {
   return res.json({

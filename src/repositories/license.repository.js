@@ -45,8 +45,21 @@ async function getAllLicenses() {
   return result.rows;
 }
 
+async function toggleLicense(id) {
+  const result = await pool.query(
+    `UPDATE licenses
+     SET is_active = NOT is_active
+     WHERE id = $1
+     RETURNING *`,
+    [id]
+  );
+
+  return result.rows[0];
+}
+
 module.exports = {
   createLicense,
   getActiveLicense,
   getAllLicenses,
+  toggleLicense,
 };

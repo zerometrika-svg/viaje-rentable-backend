@@ -85,27 +85,39 @@ async function touchDevice(deviceId) {
 async function getAllDevices() {
   const result = await pool.query(
     `SELECT
-       d.id,
-       d.user_id,
-       d.device_hash,
-       d.device_name,
-       d.is_active,
-       d.bound_at,
-       d.last_seen_at,
-       d.demo_started_at,
-       d.demo_expires_at,
-       d.demo_status,
-       d.android_id,
-       d.brand,
-       d.first_seen_at,
-       u.email AS user_email,
-       u.name AS user_name
-     FROM devices d
-     LEFT JOIN users u ON u.id = d.user_id
-     ORDER BY d.id DESC`
+      d.id,
+      d.user_id,
+      d.device_hash,
+      d.device_name,
+      d.is_active,
+      d.bound_at,
+      d.last_seen_at,
+      d.demo_started_at,
+      d.demo_expires_at,
+      d.demo_status,
+      d.android_id,
+      d.brand,
+      d.first_seen_at,
+      u.email AS user_email,
+      u.name AS user_name
+    FROM devices d
+    LEFT JOIN users u ON u.id = d.user_id
+    ORDER BY d.id DESC`
   );
 
   return result.rows;
+}
+
+async function toggleDevice(id) {
+  const result = await pool.query(
+    `UPDATE devices
+     SET is_active = NOT is_active
+     WHERE id = $1
+     RETURNING *`,
+    [id]
+  );
+
+  return result.rows[0];
 }
 
 module.exports = {
@@ -117,4 +129,5 @@ module.exports = {
   updateDeviceDemoStatus,
   touchDevice,
   getAllDevices,
+  toggleDevice,
 };
