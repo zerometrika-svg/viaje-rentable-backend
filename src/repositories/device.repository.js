@@ -87,6 +87,7 @@ async function getAllDevices() {
     `SELECT
       d.id,
       d.user_id,
+      u.email AS email,
       d.device_hash,
       d.device_name,
       d.is_active,
