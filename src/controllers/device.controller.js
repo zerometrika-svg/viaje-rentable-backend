@@ -28,9 +28,7 @@ function parseDbTimestamp(value) {
     const trimmed = value.trim();
     if (!trimmed) return null;
     const hasTz = /Z$|[+-]\d{2}:\d{2}$/.test(trimmed);
-    const normalized = hasTz
-      ? trimmed
-      : trimmed.replace(" ", "T");
+    const normalized = hasTz ? trimmed : trimmed.replace(" ", "T");
     const parsed = new Date(normalized);
     return Number.isNaN(parsed.getTime()) ? null : parsed;
   }
@@ -55,6 +53,7 @@ function buildDemoResponse(device, now) {
   const demoStartedAt = parseDbTimestamp(device.demo_started_at);
   const demoExpiresAt = parseDbTimestamp(device.demo_expires_at);
   if (!demoStartedAt || !demoExpiresAt) return null;
+
   const demoExpired = now.getTime() >= demoExpiresAt.getTime();
   const demoStatus = demoExpired ? STATUS_DEMO_EXPIRED : STATUS_DEMO_ACTIVE;
 
@@ -113,6 +112,8 @@ async function bindDevice(req, res) {
 
     const deviceHash = req.body?.deviceHash || req.body?.device_hash;
     const deviceName = req.body?.deviceName || req.body?.device_name;
+    const androidVersion = req.body?.androidVersion || req.body?.android_version || null;
+    const appVersion = req.body?.appVersion || req.body?.app_version || null;
 
     if (!deviceHash) {
       return res.status(400).json({
@@ -131,8 +132,7 @@ async function bindDevice(req, res) {
     }
 
     const now = new Date();
-    const isLicenseValid =
-      license.is_active && new Date(license.expires_at) > now;
+    const isLicenseValid = license.is_active && new Date(license.expires_at) > now;
 
     if (!isLicenseValid) {
       return res.status(403).json({
@@ -165,12 +165,12 @@ async function bindDevice(req, res) {
       });
     }
 
-    const device = await createDevice(
-      user.id,
+    const newDevice = await createDevice(
+      userId,
       deviceHash,
-      deviceName,
-      req.body.android_version,
-      req.body.app_version
+      deviceName || "Unknown Device",
+      androidVersion,
+      appVersion
     );
 
     const ensuredNewDevice = await initializeDemoForDevice(newDevice);
@@ -195,11 +195,13 @@ async function checkDevice(req, res) {
     const deviceHash = req.body?.deviceHash || req.body?.device_hash;
     const deviceName = req.body?.deviceName || req.body?.device_name;
     const androidId = req.body?.androidId || req.body?.android_id;
+
     logDemoFlow("device/check request", {
       device_hash: deviceHash || null,
       device_name: deviceName || null,
       android_id: androidId || null,
     });
+
     console.log(
       `[DEVICE_CHECK] ${req.method} ${req.originalUrl} deviceHash=${deviceHash ? "yes" : "no"}`
     );
@@ -267,6 +269,7 @@ async function checkDevice(req, res) {
     if (!allowed && demo && !demoExpired && !isLicenseValid) reason = "license_inactive";
 
     const response = buildCheckResponse({ device, license, demo, allowed, reason, now });
+
     logDemoFlow("device/check response", {
       device_hash: deviceHash,
       statusCode: 200,
@@ -277,6 +280,7 @@ async function checkDevice(req, res) {
       demo_expires_at: demo ? demo.demoExpiresAt : null,
       response,
     });
+
     return res.json(response);
   } catch (error) {
     return res.status(500).json({
@@ -291,6 +295,9 @@ async function startDemo(req, res) {
     const deviceHash = req.body?.deviceHash || req.body?.device_hash;
     const deviceName = req.body?.deviceName || req.body?.device_name;
     const androidId = req.body?.androidId || req.body?.android_id;
+    const androidVersion = req.body?.androidVersion || req.body?.android_version || null;
+    const appVersion = req.body?.appVersion || req.body?.app_version || null;
+
     logDemoFlow("device/start-demo request", {
       device_hash: deviceHash || null,
       device_name: deviceName || null,
@@ -311,15 +318,20 @@ async function startDemo(req, res) {
     if (!device) {
       const fallbackId = androidId || deviceHash;
       const email = `device_${fallbackId}@devices.local`;
+
       let user = await getUserByEmail(email);
       if (!user) {
         user = await createUser(email, deviceName || "Device");
       }
+
       userId = user.id;
+
       device = await createDevice(
         userId,
         deviceHash,
-        deviceName || "Unknown Device"
+        deviceName || "Unknown Device",
+        androidVersion,
+        appVersion
       );
     }
 
@@ -328,12 +340,14 @@ async function startDemo(req, res) {
       license && license.is_active && new Date(license.expires_at) > now;
 
     const existingDemo = buildDemoResponse(device, now);
+
     if (existingDemo) {
       const demoActive = existingDemo.demoStatus === STATUS_DEMO_ACTIVE;
       const demoExpired = existingDemo.demoStatus === STATUS_DEMO_EXPIRED;
       const demoLicense = existingDemo.demoStatus === STATUS_LICENSE_ACTIVE;
       const allowed = isLicenseValid || demoActive || demoLicense;
       const reason = !allowed && demoExpired ? "demo_expired" : null;
+
       const response = buildCheckResponse({
         device,
         license,
@@ -342,6 +356,7 @@ async function startDemo(req, res) {
         reason,
         now,
       });
+
       logDemoFlow("device/start-demo response (existing)", {
         device_hash: deviceHash,
         statusCode: 200,
@@ -352,6 +367,7 @@ async function startDemo(req, res) {
         demo_expires_at: existingDemo.demoExpiresAt,
         response,
       });
+
       return res.json(response);
     }
 
@@ -366,6 +382,7 @@ async function startDemo(req, res) {
       reason: null,
       now,
     });
+
     logDemoFlow("device/start-demo response (new)", {
       device_hash: deviceHash,
       statusCode: 200,
@@ -376,6 +393,7 @@ async function startDemo(req, res) {
       demo_expires_at: demo ? demo.demoExpiresAt : null,
       response,
     });
+
     return res.json(response);
   } catch (error) {
     return res.status(500).json({
