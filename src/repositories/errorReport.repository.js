@@ -33,8 +33,20 @@ async function getAllErrorReports() {
   return result.rows;
 }
 
+async function markErrorReportReviewed(id) {
+  const result = await pool.query(
+    `UPDATE error_reports
+     SET status = 'reviewed'
+     WHERE id = $1
+     RETURNING *`,
+    [id]
+  );
+
+  return result.rows[0] || null;
+}
+
 module.exports = {
   createErrorReport,
   getAllErrorReports,
+  markErrorReportReviewed,
 };
-

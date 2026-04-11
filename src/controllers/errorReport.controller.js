@@ -1,6 +1,7 @@
 const {
   createErrorReport,
   getAllErrorReports,
+  markErrorReportReviewed,
 } = require("../repositories/errorReport.repository");
 
 async function reportError(req, res) {
@@ -46,8 +47,29 @@ async function listErrorReports(req, res) {
   }
 }
 
+async function reviewErrorReport(req, res) {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (!Number.isFinite(id)) {
+      return res.status(400).json({ ok: false, error: "invalid_id" });
+    }
+
+    const updated = await markErrorReportReviewed(id);
+    if (!updated) {
+      return res.status(404).json({ ok: false, error: "error_report_not_found" });
+    }
+
+    return res.json({ ok: true, data: updated });
+  } catch (error) {
+    return res.status(500).json({
+      ok: false,
+      error: error.message,
+    });
+  }
+}
+
 module.exports = {
   reportError,
   listErrorReports,
+  reviewErrorReport,
 };
-

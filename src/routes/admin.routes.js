@@ -11,7 +11,7 @@ const {
   toggleDevice,
 } = require("../controllers/admin.controller");
 const { generateCodes } = require("../controllers/licenseCode.controller");
-const { listErrorReports } = require("../controllers/errorReport.controller");
+const { listErrorReports, reviewErrorReport } = require("../controllers/errorReport.controller");
 
 router.post("/create-user", createUserWithLicense);
 router.post("/check-license", checkLicense);
@@ -20,6 +20,7 @@ router.post("/generate-codes", generateCodes);
 router.get("/licenses", listLicenses);
 router.get("/devices", listDevices);
 router.get("/errors", listErrorReports);
+router.post("/errors/:id/review", reviewErrorReport);
 router.post("/licenses/:id/toggle", toggleLicense);
 router.post("/devices/:id/toggle", toggleDevice);
 
