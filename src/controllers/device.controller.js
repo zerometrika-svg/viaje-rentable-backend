@@ -165,10 +165,12 @@ async function bindDevice(req, res) {
       });
     }
 
-    const newDevice = await createDevice(
-      userId,
+    const device = await createDevice(
+      user.id,
       deviceHash,
-      deviceName || "Unknown Device"
+      deviceName,
+      req.body.android_version,
+      req.body.app_version
     );
 
     const ensuredNewDevice = await initializeDemoForDevice(newDevice);

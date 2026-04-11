@@ -33,12 +33,19 @@ async function getDeviceByHash(deviceHash) {
   return result.rows[0];
 }
 
-async function createDevice(userId, deviceHash, deviceName) {
+// 🔥 MODIFICADO: ahora guarda android_version y app_version
+async function createDevice(userId, deviceHash, deviceName, androidVersion, appVersion) {
   const result = await pool.query(
-    `INSERT INTO devices (user_id, device_hash, device_name)
-     VALUES ($1, $2, $3)
+    `INSERT INTO devices (
+      user_id,
+      device_hash,
+      device_name,
+      android_version,
+      app_version
+    )
+     VALUES ($1, $2, $3, $4, $5)
      RETURNING *`,
-    [userId, deviceHash, deviceName]
+    [userId, deviceHash, deviceName, androidVersion, appVersion]
   );
 
   return result.rows[0];
@@ -82,6 +89,7 @@ async function touchDevice(deviceId) {
   return result.rows[0];
 }
 
+// 🔥 YA ESTÁ BIEN (no tocar)
 async function getAllDevices() {
   const result = await pool.query(
     `SELECT
@@ -90,6 +98,8 @@ async function getAllDevices() {
       u.email AS email,
       d.device_hash,
       d.device_name,
+      d.android_version,
+      d.app_version,
       d.is_active,
       d.bound_at,
       d.last_seen_at,
