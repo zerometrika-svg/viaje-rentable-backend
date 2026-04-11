@@ -6,4 +6,3 @@ const { reportError } = require("../controllers/errorReport.controller");
 router.post("/report", reportError);
 
 module.exports = router;
-
