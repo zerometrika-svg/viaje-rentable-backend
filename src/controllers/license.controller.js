@@ -3,6 +3,7 @@ const {
   getDeviceByUserIdAndHash,
   getDeviceByHash,
   createDevice,
+  updateDeviceMetadata,
   updateDeviceDemoStatus,
 } = require("../repositories/device.repository");
 const { createUser, getUserByEmail } = require("../repositories/user.repository");
@@ -11,12 +12,31 @@ const ADMIN_CODE = "9410123";
 const ADMIN_LICENSE_DAYS = 3650;
 const STATUS_LICENSE_ACTIVE = "LICENCIA_ACTIVA";
 
+function normalizeString(value) {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  return trimmed === "" ? null : trimmed;
+}
+
+function readBodyField(body, camelKey, snakeKey) {
+  if (!body) return null;
+  const camel = body[camelKey];
+  if (camel !== undefined && camel !== null) return camel;
+  const snake = body[snakeKey];
+  if (snake !== undefined && snake !== null) return snake;
+  return null;
+}
+
 async function activateLicense(req, res) {
   try {
     const code = req.body?.license_code || req.body?.code;
-    const deviceHash = req.body?.deviceHash || req.body?.device_hash;
-    const deviceName = req.body?.deviceName || req.body?.device_name;
-    const androidId = req.body?.androidId || req.body?.android_id;
+    const deviceHash = normalizeString(readBodyField(req.body, "deviceHash", "device_hash"));
+    const deviceName = normalizeString(readBodyField(req.body, "deviceName", "device_name"));
+    const androidId = normalizeString(readBodyField(req.body, "androidId", "android_id"));
+    const androidVersion = normalizeString(
+      readBodyField(req.body, "androidVersion", "android_version")
+    );
+    const appVersion = normalizeString(readBodyField(req.body, "appVersion", "app_version"));
 
     if (!code || !deviceHash) {
       return res.status(400).json({
@@ -63,10 +83,26 @@ async function activateLicense(req, res) {
       const created = await createDevice(
         userId,
         deviceHash,
-        deviceName || "Unknown Device"
+        deviceName || "Unknown Device",
+        androidVersion,
+        appVersion
       );
+      if (deviceName || androidVersion || appVersion) {
+        await updateDeviceMetadata(created.id, {
+          deviceName,
+          androidVersion,
+          appVersion,
+        });
+      }
       await updateDeviceDemoStatus(created.id, STATUS_LICENSE_ACTIVE);
     } else {
+      if (deviceName || androidVersion || appVersion) {
+        await updateDeviceMetadata(existingDevice.id, {
+          deviceName,
+          androidVersion,
+          appVersion,
+        });
+      }
       await updateDeviceDemoStatus(existingDevice.id, STATUS_LICENSE_ACTIVE);
     }
 

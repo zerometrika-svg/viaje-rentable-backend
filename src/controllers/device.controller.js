@@ -4,6 +4,7 @@ const {
   getDeviceByUserIdAndHash,
   getDeviceByHash,
   createDevice,
+  updateDeviceMetadata,
   updateDeviceDemo,
   updateDeviceDemoStatus,
   touchDevice,
@@ -19,6 +20,21 @@ const DEMO_LOG_TAG = "DEMO_FLOW";
 function logDemoFlow(message, payload) {
   const suffix = payload ? ` ${JSON.stringify(payload)}` : "";
   console.log(`[${DEMO_LOG_TAG}] ${message}${suffix}`);
+}
+
+function normalizeString(value) {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  return trimmed === "" ? null : trimmed;
+}
+
+function readBodyField(body, camelKey, snakeKey) {
+  if (!body) return null;
+  const camel = body[camelKey];
+  if (camel !== undefined && camel !== null) return camel;
+  const snake = body[snakeKey];
+  if (snake !== undefined && snake !== null) return snake;
+  return null;
 }
 
 function parseDbTimestamp(value) {
@@ -110,10 +126,25 @@ async function bindDevice(req, res) {
       });
     }
 
-    const deviceHash = req.body?.deviceHash || req.body?.device_hash;
-    const deviceName = req.body?.deviceName || req.body?.device_name;
-    const androidVersion = req.body?.androidVersion || req.body?.android_version || null;
-    const appVersion = req.body?.appVersion || req.body?.app_version || null;
+    if (process.env.LOG_DEVICE_BIND_BODY === "1") {
+      console.log("[DEVICE_BIND] req.body=", JSON.stringify(req.body || {}));
+    }
+
+    const deviceHash = normalizeString(readBodyField(req.body, "deviceHash", "device_hash"));
+    const deviceName = normalizeString(readBodyField(req.body, "deviceName", "device_name"));
+    const androidVersion = normalizeString(
+      readBodyField(req.body, "androidVersion", "android_version")
+    );
+    const appVersion = normalizeString(readBodyField(req.body, "appVersion", "app_version"));
+
+    if (process.env.LOG_DEVICE_BIND_BODY === "1") {
+      console.log("[DEVICE_BIND] parsed=", {
+        device_hash: deviceHash,
+        device_name: deviceName,
+        android_version: androidVersion,
+        app_version: appVersion,
+      });
+    }
 
     if (!deviceHash) {
       return res.status(400).json({
@@ -144,14 +175,21 @@ async function bindDevice(req, res) {
     const existingDevice = await getDeviceByUserIdAndHash(userId, deviceHash);
 
     if (existingDevice) {
-      await touchDevice(existingDevice.id);
+      if (deviceName || androidVersion || appVersion) {
+        await updateDeviceMetadata(existingDevice.id, {
+          deviceName,
+          androidVersion,
+          appVersion,
+        });
+      }
 
-      const demo = buildDemoResponse(existingDevice, now);
+      const touched = await touchDevice(existingDevice.id);
+      const demo = buildDemoResponse(touched, now);
 
       return res.json({
         ok: true,
         message: "device_already_bound",
-        device: existingDevice,
+        device: touched,
         demo,
       });
     }
@@ -192,14 +230,20 @@ async function bindDevice(req, res) {
 
 async function checkDevice(req, res) {
   try {
-    const deviceHash = req.body?.deviceHash || req.body?.device_hash;
-    const deviceName = req.body?.deviceName || req.body?.device_name;
-    const androidId = req.body?.androidId || req.body?.android_id;
+    const deviceHash = normalizeString(readBodyField(req.body, "deviceHash", "device_hash"));
+    const deviceName = normalizeString(readBodyField(req.body, "deviceName", "device_name"));
+    const androidId = normalizeString(readBodyField(req.body, "androidId", "android_id"));
+    const androidVersion = normalizeString(
+      readBodyField(req.body, "androidVersion", "android_version")
+    );
+    const appVersion = normalizeString(readBodyField(req.body, "appVersion", "app_version"));
 
     logDemoFlow("device/check request", {
       device_hash: deviceHash || null,
       device_name: deviceName || null,
       android_id: androidId || null,
+      android_version: androidVersion || null,
+      app_version: appVersion || null,
     });
 
     console.log(
@@ -214,7 +258,7 @@ async function checkDevice(req, res) {
     }
 
     const now = new Date();
-    const device = await getDeviceByHash(deviceHash);
+    let device = await getDeviceByHash(deviceHash);
 
     if (!device) {
       const response = {
@@ -229,6 +273,14 @@ async function checkDevice(req, res) {
         response,
       });
       return res.json(response);
+    }
+
+    if (deviceName || androidVersion || appVersion) {
+      device = await updateDeviceMetadata(device.id, {
+        deviceName,
+        androidVersion,
+        appVersion,
+      });
     }
 
     const userId = device.user_id;
@@ -292,16 +344,20 @@ async function checkDevice(req, res) {
 
 async function startDemo(req, res) {
   try {
-    const deviceHash = req.body?.deviceHash || req.body?.device_hash;
-    const deviceName = req.body?.deviceName || req.body?.device_name;
-    const androidId = req.body?.androidId || req.body?.android_id;
-    const androidVersion = req.body?.androidVersion || req.body?.android_version || null;
-    const appVersion = req.body?.appVersion || req.body?.app_version || null;
+    const deviceHash = normalizeString(readBodyField(req.body, "deviceHash", "device_hash"));
+    const deviceName = normalizeString(readBodyField(req.body, "deviceName", "device_name"));
+    const androidId = normalizeString(readBodyField(req.body, "androidId", "android_id"));
+    const androidVersion = normalizeString(
+      readBodyField(req.body, "androidVersion", "android_version")
+    );
+    const appVersion = normalizeString(readBodyField(req.body, "appVersion", "app_version"));
 
     logDemoFlow("device/start-demo request", {
       device_hash: deviceHash || null,
       device_name: deviceName || null,
       android_id: androidId || null,
+      android_version: androidVersion || null,
+      app_version: appVersion || null,
     });
 
     if (!deviceHash) {
@@ -333,6 +389,12 @@ async function startDemo(req, res) {
         androidVersion,
         appVersion
       );
+    } else if (deviceName || androidVersion || appVersion) {
+      device = await updateDeviceMetadata(device.id, {
+        deviceName,
+        androidVersion,
+        appVersion,
+      });
     }
 
     const license = userId ? await getActiveLicense(userId) : null;

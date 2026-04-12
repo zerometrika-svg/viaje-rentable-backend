@@ -1,0 +1,6 @@
+ALTER TABLE devices
+  ADD COLUMN IF NOT EXISTS android_version VARCHAR(32);
+
+ALTER TABLE devices
+  ADD COLUMN IF NOT EXISTS app_version VARCHAR(50);
+

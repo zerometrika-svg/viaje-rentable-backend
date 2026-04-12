@@ -21,6 +21,8 @@ CREATE TABLE IF NOT EXISTS devices (
     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     device_hash VARCHAR(255) NOT NULL,
     device_name VARCHAR(255),
+    android_version VARCHAR(32),
+    app_version VARCHAR(50),
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     bound_at TIMESTAMP NOT NULL DEFAULT NOW(),
     last_seen_at TIMESTAMP NOT NULL DEFAULT NOW(),
