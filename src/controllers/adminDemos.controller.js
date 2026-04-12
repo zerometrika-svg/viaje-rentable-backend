@@ -1,9 +1,9 @@
 const {
   getAdminDemos,
   getDeviceById,
-  updateDeviceDemoExpiry,
   updateDeviceDemoStatus,
 } = require("../repositories/device.repository");
+const pool = require("../config/db");
 
 const STATUS_DEMO_ACTIVE = "DEMO_ACTIVA";
 const STATUS_DEMO_PAUSED = "DEMO_PAUSADA";
@@ -47,24 +47,42 @@ async function updateDemo(req, res) {
       return res.status(404).json({ ok: false, error: "device_not_found" });
     }
 
+    const rawStartedAt = req.body?.demo_started_at ?? req.body?.demoStartedAt;
     const rawExpiresAt = req.body?.demo_expires_at ?? req.body?.demoExpiresAt;
-    if (rawExpiresAt === null || rawExpiresAt === undefined || String(rawExpiresAt).trim() === "") {
+
+    if (
+      rawStartedAt === null ||
+      rawStartedAt === undefined ||
+      String(rawStartedAt).trim() === "" ||
+      rawExpiresAt === null ||
+      rawExpiresAt === undefined ||
+      String(rawExpiresAt).trim() === ""
+    ) {
       return res.status(400).json({
         ok: false,
-        error: "demo_expires_at_required",
+        error: "demo_started_at_and_demo_expires_at_required",
       });
     }
 
+    const parsedStartedAt = parseIsoDateTimeWithSeconds(rawStartedAt);
     const parsedExpiresAt = parseIsoDateTimeWithSeconds(rawExpiresAt);
-    if (!parsedExpiresAt) {
+    if (!parsedStartedAt || !parsedExpiresAt) {
       return res.status(400).json({
         ok: false,
-        error: "invalid_demo_expires_at",
+        error: "invalid_demo_datetime",
         hint: "Use ISO datetime with seconds (e.g. 2026-04-12T18:30:59 or 2026-04-12T18:30:59Z)",
       });
     }
 
+    const { raw: demoStartedAtRaw, date: demoStartedAtDate } = parsedStartedAt;
     const { raw: demoExpiresAtRaw, date: demoExpiresAtDate } = parsedExpiresAt;
+
+    if (demoStartedAtDate.getTime() > demoExpiresAtDate.getTime()) {
+      return res.status(400).json({
+        ok: false,
+        error: "demo_started_at_after_demo_expires_at",
+      });
+    }
 
     const now = new Date();
     let nextStatus = STATUS_DEMO_ACTIVE;
@@ -74,7 +92,26 @@ async function updateDemo(req, res) {
       nextStatus = STATUS_DEMO_PAUSED;
     }
 
-    const updated = await updateDeviceDemoExpiry(id, demoExpiresAtRaw, nextStatus);
+    const result = await pool.query(
+      `UPDATE devices
+       SET demo_started_at = $2,
+           demo_expires_at = $3,
+           demo_status = $4
+       WHERE id = $1
+       RETURNING
+         id,
+         user_id,
+         device_hash,
+         device_name,
+         demo_started_at,
+         demo_expires_at,
+         demo_status,
+         is_active,
+         last_seen_at`,
+      [id, demoStartedAtRaw, demoExpiresAtRaw, nextStatus]
+    );
+
+    const updated = result.rows[0] || null;
     return res.json({ ok: true, data: updated });
   } catch (error) {
     return res.status(500).json({ ok: false, error: error.message });
