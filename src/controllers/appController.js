@@ -2,8 +2,6 @@ const { getLatestVersion } = require('../services/appVersionService');
 
 exports.getAppVersion = async (req, res) => {
     try {
-        const currentVersionCode = parseInt(req.query.versionCode || "0");
-
         const latest = await getLatestVersion();
 
         if (!latest) {
@@ -15,13 +13,12 @@ exports.getAppVersion = async (req, res) => {
 
         return res.json({
             ok: true,
-            latestVersionCode: latest.version_code,
             latestVersionName: latest.version_name,
-            minSupportedVersionCode: latest.min_supported_version_code,
-            forceUpdate: latest.force_update,
+            latestVersionCode: latest.version_code,
             apkUrl: latest.apk_url,
             message: latest.message,
-            hasUpdate: currentVersionCode < latest.version_code
+            forceUpdate: true,
+            minSupportedVersionCode: latest.version_code
         });
 
     } catch (error) {

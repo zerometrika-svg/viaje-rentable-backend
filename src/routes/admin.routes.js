@@ -23,6 +23,12 @@ const {
   toggleDemo,
   updateDemo,
 } = require("../controllers/adminDemos.controller");
+const {
+  getReleases,
+  postRelease,
+  activateReleaseById,
+  deleteReleaseById,
+} = require("../controllers/adminReleases.controller");
 
 router.post("/create-user", createUserWithLicense);
 router.post("/check-license", checkLicense);
@@ -40,6 +46,11 @@ router.post("/licenses/:id/toggle", toggleLicense);
 router.post("/devices/:id/toggle", toggleDevice);
 router.post("/demos/:id/toggle", toggleDemo);
 router.post("/demos/:id/update", updateDemo);
+
+router.get("/releases", getReleases);
+router.post("/releases", postRelease);
+router.post("/releases/:id/activate", activateReleaseById);
+router.delete("/releases/:id", deleteReleaseById);
 
 router.get("/me", authMiddleware, (req, res) => {
   return res.json({

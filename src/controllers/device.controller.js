@@ -303,7 +303,8 @@ async function checkDevice(req, res) {
       device.demo_status !== STATUS_DEMO_EXPIRED &&
       device.demo_status !== STATUS_LICENSE_ACTIVE
     ) {
-      device = await updateDeviceDemoStatus(device.id, STATUS_DEMO_EXPIRED);
+      const updated = await updateDeviceDemoStatus(device.id, STATUS_DEMO_EXPIRED);
+      device = updated || { ...device, demo_status: STATUS_DEMO_EXPIRED };
     }
 
     const userId = device.user_id;
@@ -319,7 +320,7 @@ async function checkDevice(req, res) {
       });
     }
 
-    await touchDevice(device.id);
+    device = (await touchDevice(device.id)) || device;
 
     const demo = buildDemoResponse(device, now);
     const demoActive = demo ? demo.demoStatus === STATUS_DEMO_ACTIVE : false;

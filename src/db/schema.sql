@@ -62,3 +62,17 @@ CREATE TABLE IF NOT EXISTS error_reports (
     status VARCHAR(30) NOT NULL DEFAULT 'pending',
     created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
+
+CREATE TABLE IF NOT EXISTS app_releases (
+    id SERIAL PRIMARY KEY,
+    version_name VARCHAR(50) NOT NULL,
+    version_code INTEGER NOT NULL,
+    apk_url TEXT NOT NULL,
+    message TEXT NOT NULL DEFAULT '',
+    is_active BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS app_releases_single_active_true
+    ON app_releases (is_active)
+    WHERE is_active = true;
