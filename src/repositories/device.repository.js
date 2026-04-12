@@ -33,6 +33,17 @@ async function getDeviceByHash(deviceHash) {
   return result.rows[0];
 }
 
+async function getDeviceById(deviceId) {
+  const result = await pool.query(
+    `SELECT * FROM devices
+     WHERE id = $1
+     LIMIT 1`,
+    [deviceId]
+  );
+
+  return result.rows[0];
+}
+
 // 🔥 MODIFICADO: ahora guarda android_version y app_version
 async function createDevice(userId, deviceHash, deviceName, androidVersion, appVersion) {
   const result = await pool.query(
@@ -64,6 +75,50 @@ async function updateDeviceMetadata(deviceId, deviceName, androidVersion, appVer
      WHERE id = $4
      RETURNING *`,
     [deviceNameSafe, androidVersionSafe, appVersionSafe, deviceId]
+  );
+
+  return result.rows[0];
+}
+
+async function getAdminDemos() {
+  const result = await pool.query(
+    `SELECT
+      id,
+      user_id,
+      device_hash,
+      device_name,
+      demo_started_at,
+      demo_expires_at,
+      demo_status,
+      is_active,
+      last_seen_at
+     FROM devices
+     WHERE demo_started_at IS NOT NULL
+        OR demo_expires_at IS NOT NULL
+        OR demo_status IS NOT NULL
+     ORDER BY id DESC`
+  );
+
+  return result.rows;
+}
+
+async function updateDeviceDemoExpiry(deviceId, demoExpiresAt, demoStatus) {
+  const result = await pool.query(
+    `UPDATE devices
+     SET demo_expires_at = $2,
+         demo_status = $3
+     WHERE id = $1
+     RETURNING
+       id,
+       user_id,
+       device_hash,
+       device_name,
+       demo_started_at,
+       demo_expires_at,
+       demo_status,
+       is_active,
+       last_seen_at`,
+    [deviceId, demoExpiresAt, demoStatus]
   );
 
   return result.rows[0];
@@ -153,8 +208,11 @@ module.exports = {
   getDevicesByUserId,
   getDeviceByUserIdAndHash,
   getDeviceByHash,
+  getDeviceById,
   createDevice,
   updateDeviceMetadata,
+  getAdminDemos,
+  updateDeviceDemoExpiry,
   updateDeviceDemo,
   updateDeviceDemoStatus,
   touchDevice,
