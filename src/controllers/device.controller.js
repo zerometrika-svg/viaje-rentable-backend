@@ -15,6 +15,7 @@ const DEMO_DURATION_DAYS = 7;
 const STATUS_DEMO_ACTIVE = "DEMO_ACTIVA";
 const STATUS_DEMO_EXPIRED = "DEMO_EXPIRADA";
 const STATUS_LICENSE_ACTIVE = "LICENCIA_ACTIVA";
+const STATUS_DEMO_PAUSED = "DEMO_PAUSADA";
 const DEMO_LOG_TAG = "DEMO_FLOW";
 
 function logDemoFlow(message, payload) {
@@ -289,6 +290,20 @@ async function checkDevice(req, res) {
         androidVersionSafe,
         appVersionSafe
       );
+    }
+
+    const rawDemoExpiresAt = device.demo_expires_at;
+    const demoExpiresAt = rawDemoExpiresAt ? new Date(rawDemoExpiresAt) : null;
+    const demoExpiresAtValid =
+      demoExpiresAt && !Number.isNaN(demoExpiresAt.getTime());
+
+    if (
+      demoExpiresAtValid &&
+      now.getTime() >= demoExpiresAt.getTime() &&
+      device.demo_status !== STATUS_DEMO_EXPIRED &&
+      device.demo_status !== STATUS_LICENSE_ACTIVE
+    ) {
+      device = await updateDeviceDemoStatus(device.id, STATUS_DEMO_EXPIRED);
     }
 
     const userId = device.user_id;
