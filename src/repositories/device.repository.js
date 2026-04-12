@@ -51,15 +51,19 @@ async function createDevice(userId, deviceHash, deviceName, androidVersion, appV
   return result.rows[0];
 }
 
-async function updateDeviceMetadata(deviceId, { deviceName, androidVersion, appVersion }) {
+async function updateDeviceMetadata(deviceId, deviceName, androidVersion, appVersion) {
+  const deviceNameSafe = deviceName || "Unknown Device";
+  const androidVersionSafe = androidVersion || "";
+  const appVersionSafe = appVersion || "";
+
   const result = await pool.query(
     `UPDATE devices
-     SET device_name = COALESCE($2, device_name),
-         android_version = CASE WHEN $3 IS NOT NULL THEN $3 ELSE android_version END,
-         app_version = CASE WHEN $4 IS NOT NULL THEN $4 ELSE app_version END
-     WHERE id = $1
+     SET device_name = $1,
+         android_version = $2,
+         app_version = $3
+     WHERE id = $4
      RETURNING *`,
-    [deviceId, deviceName ?? null, androidVersion ?? null, appVersion ?? null]
+    [deviceNameSafe, androidVersionSafe, appVersionSafe, deviceId]
   );
 
   return result.rows[0];

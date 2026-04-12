@@ -176,11 +176,15 @@ async function bindDevice(req, res) {
 
     if (existingDevice) {
       if (deviceName || androidVersion || appVersion) {
-        await updateDeviceMetadata(existingDevice.id, {
-          deviceName,
-          androidVersion,
-          appVersion,
-        });
+        const deviceNameSafe = deviceName || "Unknown Device";
+        const androidVersionSafe = androidVersion || "";
+        const appVersionSafe = appVersion || "";
+        await updateDeviceMetadata(
+          existingDevice.id,
+          deviceNameSafe,
+          androidVersionSafe,
+          appVersionSafe
+        );
       }
 
       const touched = await touchDevice(existingDevice.id);
@@ -276,11 +280,15 @@ async function checkDevice(req, res) {
     }
 
     if (deviceName || androidVersion || appVersion) {
-      device = await updateDeviceMetadata(device.id, {
-        deviceName,
-        androidVersion,
-        appVersion,
-      });
+      const deviceNameSafe = deviceName || "Unknown Device";
+      const androidVersionSafe = androidVersion || "";
+      const appVersionSafe = appVersion || "";
+      device = await updateDeviceMetadata(
+        device.id,
+        deviceNameSafe,
+        androidVersionSafe,
+        appVersionSafe
+      );
     }
 
     const userId = device.user_id;
@@ -390,11 +398,15 @@ async function startDemo(req, res) {
         appVersion
       );
     } else if (deviceName || androidVersion || appVersion) {
-      device = await updateDeviceMetadata(device.id, {
-        deviceName,
-        androidVersion,
-        appVersion,
-      });
+      const deviceNameSafe = deviceName || "Unknown Device";
+      const androidVersionSafe = androidVersion || "";
+      const appVersionSafe = appVersion || "";
+      device = await updateDeviceMetadata(
+        device.id,
+        deviceNameSafe,
+        androidVersionSafe,
+        appVersionSafe
+      );
     }
 
     const license = userId ? await getActiveLicense(userId) : null;

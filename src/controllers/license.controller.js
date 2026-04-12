@@ -88,20 +88,28 @@ async function activateLicense(req, res) {
         appVersion
       );
       if (deviceName || androidVersion || appVersion) {
-        await updateDeviceMetadata(created.id, {
-          deviceName,
-          androidVersion,
-          appVersion,
-        });
+        const deviceNameSafe = deviceName || "Unknown Device";
+        const androidVersionSafe = androidVersion || "";
+        const appVersionSafe = appVersion || "";
+        await updateDeviceMetadata(
+          created.id,
+          deviceNameSafe,
+          androidVersionSafe,
+          appVersionSafe
+        );
       }
       await updateDeviceDemoStatus(created.id, STATUS_LICENSE_ACTIVE);
     } else {
       if (deviceName || androidVersion || appVersion) {
-        await updateDeviceMetadata(existingDevice.id, {
-          deviceName,
-          androidVersion,
-          appVersion,
-        });
+        const deviceNameSafe = deviceName || "Unknown Device";
+        const androidVersionSafe = androidVersion || "";
+        const appVersionSafe = appVersion || "";
+        await updateDeviceMetadata(
+          existingDevice.id,
+          deviceNameSafe,
+          androidVersionSafe,
+          appVersionSafe
+        );
       }
       await updateDeviceDemoStatus(existingDevice.id, STATUS_LICENSE_ACTIVE);
     }
