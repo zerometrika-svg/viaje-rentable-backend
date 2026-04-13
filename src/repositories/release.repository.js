@@ -2,7 +2,7 @@ const pool = require("../config/db");
 
 async function listReleases() {
   const result = await pool.query(
-    `SELECT id, version_name, version_code, apk_url, message, active, created_at
+    `SELECT id, version_name, version_code, min_supported_version_code, force_update, apk_url, message, active, created_at
      FROM app_releases
      ORDER BY created_at DESC, version_code DESC`
   );
@@ -12,7 +12,7 @@ async function listReleases() {
 
 async function getActiveRelease() {
   const result = await pool.query(
-    `SELECT id, version_name, version_code, apk_url, message, active, created_at
+    `SELECT id, version_name, version_code, min_supported_version_code, force_update, apk_url, message, active, created_at
      FROM app_releases
      WHERE active = true
      ORDER BY created_at DESC, version_code DESC
@@ -22,7 +22,12 @@ async function getActiveRelease() {
   return result.rows[0];
 }
 
-async function createRelease({ versionName, versionCode, apkUrl, message }) {
+async function createRelease({
+  versionName,
+  versionCode,
+  apkUrl,
+  message,
+}) {
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
@@ -34,9 +39,9 @@ async function createRelease({ versionName, versionCode, apkUrl, message }) {
     );
 
     const inserted = await client.query(
-      `INSERT INTO app_releases (version_name, version_code, apk_url, message, active)
-       VALUES ($1, $2, $3, $4, true)
-       RETURNING id, version_name, version_code, apk_url, message, active, created_at`,
+      `INSERT INTO app_releases (version_name, version_code, min_supported_version_code, apk_url, message, active)
+       VALUES ($1, $2, $2, $3, $4, true)
+       RETURNING id, version_name, version_code, min_supported_version_code, force_update, apk_url, message, active, created_at`,
       [versionName, versionCode, apkUrl, message]
     );
 
@@ -77,7 +82,7 @@ async function activateRelease(id) {
       `UPDATE app_releases
        SET active = true
        WHERE id = $1
-       RETURNING id, version_name, version_code, apk_url, message, active, created_at`,
+       RETURNING id, version_name, version_code, min_supported_version_code, force_update, apk_url, message, active, created_at`,
       [id]
     );
 
@@ -95,7 +100,7 @@ async function deleteRelease(id) {
   const result = await pool.query(
     `DELETE FROM app_releases
      WHERE id = $1
-     RETURNING id, version_name, version_code, apk_url, message, active, created_at`,
+     RETURNING id, version_name, version_code, min_supported_version_code, force_update, apk_url, message, active, created_at`,
     [id]
   );
 
