@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS app_releases (
   version_code INTEGER NOT NULL,
   apk_url TEXT NOT NULL,
   message TEXT NOT NULL DEFAULT '',
-  is_active BOOLEAN NOT NULL DEFAULT FALSE,
+  active BOOLEAN NOT NULL DEFAULT FALSE,
   created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
@@ -14,14 +14,14 @@ BEGIN
     SELECT 1
     FROM information_schema.columns
     WHERE table_name = 'app_releases'
-      AND column_name = 'active'
+      AND column_name = 'is_active'
   ) AND NOT EXISTS (
     SELECT 1
     FROM information_schema.columns
     WHERE table_name = 'app_releases'
-      AND column_name = 'is_active'
+      AND column_name = 'active'
   ) THEN
-    ALTER TABLE app_releases RENAME COLUMN active TO is_active;
+    ALTER TABLE app_releases RENAME COLUMN is_active TO active;
   END IF;
 END $$;
 
@@ -38,12 +38,11 @@ ALTER TABLE app_releases
   ADD COLUMN IF NOT EXISTS message TEXT NOT NULL DEFAULT '';
 
 ALTER TABLE app_releases
-  ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT FALSE;
+  ADD COLUMN IF NOT EXISTS active BOOLEAN NOT NULL DEFAULT FALSE;
 
 ALTER TABLE app_releases
   ADD COLUMN IF NOT EXISTS created_at TIMESTAMP NOT NULL DEFAULT NOW();
 
 CREATE UNIQUE INDEX IF NOT EXISTS app_releases_single_active_true
-  ON app_releases (is_active)
-  WHERE is_active = true;
-
+  ON app_releases (active)
+  WHERE active = true;

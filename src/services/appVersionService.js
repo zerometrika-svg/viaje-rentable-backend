@@ -4,7 +4,7 @@ async function getLatestVersion() {
     const result = await pool.query(`
         SELECT *
         FROM app_releases
-        WHERE is_active = true
+        WHERE active = true
         ORDER BY created_at DESC, version_code DESC
         LIMIT 1
     `);

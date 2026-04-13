@@ -69,10 +69,10 @@ CREATE TABLE IF NOT EXISTS app_releases (
     version_code INTEGER NOT NULL,
     apk_url TEXT NOT NULL,
     message TEXT NOT NULL DEFAULT '',
-    is_active BOOLEAN NOT NULL DEFAULT FALSE,
+    active BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS app_releases_single_active_true
-    ON app_releases (is_active)
-    WHERE is_active = true;
+    ON app_releases (active)
+    WHERE active = true;

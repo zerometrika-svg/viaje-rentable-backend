@@ -2,7 +2,7 @@ const pool = require("../config/db");
 
 async function listReleases() {
   const result = await pool.query(
-    `SELECT id, version_name, version_code, apk_url, message, is_active, created_at
+    `SELECT id, version_name, version_code, apk_url, message, active, created_at
      FROM app_releases
      ORDER BY created_at DESC, version_code DESC`
   );
@@ -12,9 +12,9 @@ async function listReleases() {
 
 async function getActiveRelease() {
   const result = await pool.query(
-    `SELECT id, version_name, version_code, apk_url, message, is_active, created_at
+    `SELECT id, version_name, version_code, apk_url, message, active, created_at
      FROM app_releases
-     WHERE is_active = true
+     WHERE active = true
      ORDER BY created_at DESC, version_code DESC
      LIMIT 1`
   );
@@ -29,14 +29,14 @@ async function createRelease({ versionName, versionCode, apkUrl, message }) {
 
     await client.query(
       `UPDATE app_releases
-       SET is_active = false
-       WHERE is_active = true`
+       SET active = false
+       WHERE active = true`
     );
 
     const inserted = await client.query(
-      `INSERT INTO app_releases (version_name, version_code, apk_url, message, is_active)
+      `INSERT INTO app_releases (version_name, version_code, apk_url, message, active)
        VALUES ($1, $2, $3, $4, true)
-       RETURNING id, version_name, version_code, apk_url, message, is_active, created_at`,
+       RETURNING id, version_name, version_code, apk_url, message, active, created_at`,
       [versionName, versionCode, apkUrl, message]
     );
 
@@ -67,17 +67,17 @@ async function activateRelease(id) {
 
     await client.query(
       `UPDATE app_releases
-       SET is_active = false
-       WHERE is_active = true
+       SET active = false
+       WHERE active = true
          AND id <> $1`,
       [id]
     );
 
     const updated = await client.query(
       `UPDATE app_releases
-       SET is_active = true
+       SET active = true
        WHERE id = $1
-       RETURNING id, version_name, version_code, apk_url, message, is_active, created_at`,
+       RETURNING id, version_name, version_code, apk_url, message, active, created_at`,
       [id]
     );
 
@@ -95,7 +95,7 @@ async function deleteRelease(id) {
   const result = await pool.query(
     `DELETE FROM app_releases
      WHERE id = $1
-     RETURNING id, version_name, version_code, apk_url, message, is_active, created_at`,
+     RETURNING id, version_name, version_code, apk_url, message, active, created_at`,
     [id]
   );
 
@@ -109,4 +109,3 @@ module.exports = {
   activateRelease,
   deleteRelease,
 };
-
