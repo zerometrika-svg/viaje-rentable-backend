@@ -204,6 +204,17 @@ async function toggleDevice(id) {
   return result.rows[0];
 }
 
+async function deleteDevice(id) {
+  const result = await pool.query(
+    `DELETE FROM devices
+     WHERE id = $1
+     RETURNING *`,
+    [id]
+  );
+
+  return result.rows[0];
+}
+
 module.exports = {
   getDevicesByUserId,
   getDeviceByUserIdAndHash,
@@ -218,4 +229,5 @@ module.exports = {
   touchDevice,
   getAllDevices,
   toggleDevice,
+  deleteDevice,
 };

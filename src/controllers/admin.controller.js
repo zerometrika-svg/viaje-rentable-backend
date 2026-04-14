@@ -13,6 +13,7 @@ const {
 const {
   getAllDevices,
   toggleDevice: toggleDeviceRepo,
+  deleteDevice: deleteDeviceRepo,
 } = require("../repositories/device.repository");
 
 async function createUserWithLicense(req, res) {
@@ -151,6 +152,27 @@ async function toggleDevice(req, res) {
   }
 }
 
+async function deleteDevice(req, res) {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (!Number.isFinite(id)) {
+      return res.status(400).json({ ok: false, error: "invalid_id" });
+    }
+
+    const deleted = await deleteDeviceRepo(id);
+    if (!deleted) {
+      return res.status(404).json({ ok: false, error: "device_not_found" });
+    }
+
+    return res.json({ ok: true });
+  } catch (error) {
+    return res.status(500).json({
+      ok: false,
+      error: error.message,
+    });
+  }
+}
+
 module.exports = {
   createUserWithLicense,
   checkLicense,
@@ -158,4 +180,5 @@ module.exports = {
   listDevices,
   toggleLicense,
   toggleDevice,
+  deleteDevice,
 };
