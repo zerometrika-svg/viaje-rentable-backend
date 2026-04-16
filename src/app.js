@@ -8,6 +8,7 @@ const deviceRoutes = require("./routes/device.routes");
 const adminRoutes = require("./routes/admin.routes");
 const licenseRoutes = require("./routes/license.routes");
 const errorReportRoutes = require("./routes/errorReport.routes");
+const diagnosticsRoutes = require("./routes/diagnostics.routes");
 const authMiddleware = require("./middlewares/auth");
 const appRoutes = require("./routes/appRoutes");
 
@@ -36,6 +37,7 @@ app.use("/health", healthRoutes);
 app.use("/auth", authRoutes);
 app.use("/device", deviceRoutes);
 app.use("/errors", errorReportRoutes);
+app.use("/diagnostics", diagnosticsRoutes);
 app.use("/admin", adminRoutes);
 app.use("/license", licenseRoutes);
 app.use("/app", appRoutes);

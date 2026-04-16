@@ -30,6 +30,12 @@ const {
   activateReleaseById,
   deleteReleaseById,
 } = require("../controllers/adminReleases.controller");
+const {
+  listOfferFailureDiagnosticsAdmin,
+  reviewOfferFailureDiagnostic,
+  deleteOfferFailureDiagnostic,
+  deleteReviewedOfferFailureDiagnostics,
+} = require("../controllers/uberOfferDiagnostics.controller");
 
 router.post("/create-user", createUserWithLicense);
 router.post("/check-license", checkLicense);
@@ -53,6 +59,11 @@ router.get("/releases", getReleases);
 router.post("/releases", postRelease);
 router.post("/releases/:id/activate", activateReleaseById);
 router.delete("/releases/:id", deleteReleaseById);
+
+router.get("/diagnostics/offer-failure", listOfferFailureDiagnosticsAdmin);
+router.post("/diagnostics/offer-failure/:id/review", reviewOfferFailureDiagnostic);
+router.delete("/diagnostics/offer-failure/reviewed", deleteReviewedOfferFailureDiagnostics);
+router.delete("/diagnostics/offer-failure/:id", deleteOfferFailureDiagnostic);
 
 router.get("/me", authMiddleware, (req, res) => {
   return res.json({
