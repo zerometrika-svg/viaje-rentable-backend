@@ -94,6 +94,7 @@ function buildCheckResponse({ device, license, demo, allowed, reason, now }) {
     ok: true,
     allowed,
     reason,
+    diagnostic_enabled: !!(device && device.diagnostic_enabled),
     demo_status: demo ? demo.demoStatus : null,
     demo_started_at: demo ? demo.demoStartedAt : null,
     demo_expires_at: demo ? demo.demoExpiresAt : null,
@@ -270,6 +271,7 @@ async function checkDevice(req, res) {
         ok: true,
         allowed: false,
         reason: "no_demo_started",
+        diagnostic_enabled: false,
         serverTime: now.toISOString(),
       };
       logDemoFlow("device/check response", {

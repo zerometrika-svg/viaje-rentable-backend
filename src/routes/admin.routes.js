@@ -10,6 +10,7 @@ const {
   toggleLicense,
   toggleDevice,
   deleteDevice,
+  setDeviceDiagnosticEnabled,
 } = require("../controllers/admin.controller");
 const { generateCodes } = require("../controllers/licenseCode.controller");
 const {
@@ -51,6 +52,7 @@ router.post("/errors/delete-all", deleteAllErrors);
 router.delete("/errors/:id", deleteErrorReport);
 router.post("/licenses/:id/toggle", toggleLicense);
 router.post("/devices/:id/toggle", toggleDevice);
+router.post("/devices/:id/diagnostic", setDeviceDiagnosticEnabled);
 router.delete("/devices/:id", deleteDevice);
 router.post("/demos/:id/toggle", toggleDemo);
 router.post("/demos/:id/update", updateDemo);

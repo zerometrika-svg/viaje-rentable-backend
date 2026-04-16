@@ -1,0 +1,3 @@
+ALTER TABLE devices
+ADD COLUMN IF NOT EXISTS diagnostic_enabled BOOLEAN NOT NULL DEFAULT false;
+

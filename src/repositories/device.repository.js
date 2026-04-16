@@ -173,6 +173,7 @@ async function getAllDevices() {
       d.device_name,
       d.android_version,
       d.app_version,
+      d.diagnostic_enabled,
       d.is_active,
       d.bound_at,
       d.last_seen_at,
@@ -215,6 +216,18 @@ async function deleteDevice(id) {
   return result.rows[0];
 }
 
+async function setDeviceDiagnosticEnabled(id, enabled) {
+  const result = await pool.query(
+    `UPDATE devices
+     SET diagnostic_enabled = $2
+     WHERE id = $1
+     RETURNING *`,
+    [id, !!enabled]
+  );
+
+  return result.rows[0] || null;
+}
+
 module.exports = {
   getDevicesByUserId,
   getDeviceByUserIdAndHash,
@@ -230,4 +243,5 @@ module.exports = {
   getAllDevices,
   toggleDevice,
   deleteDevice,
+  setDeviceDiagnosticEnabled,
 };

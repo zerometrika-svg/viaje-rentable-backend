@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS devices (
     device_name VARCHAR(255),
     android_version VARCHAR(32),
     app_version VARCHAR(50),
+    diagnostic_enabled BOOLEAN NOT NULL DEFAULT FALSE,
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     bound_at TIMESTAMP NOT NULL DEFAULT NOW(),
     last_seen_at TIMESTAMP NOT NULL DEFAULT NOW(),

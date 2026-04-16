@@ -14,6 +14,7 @@ const {
   getAllDevices,
   toggleDevice: toggleDeviceRepo,
   deleteDevice: deleteDeviceRepo,
+  setDeviceDiagnosticEnabled: setDeviceDiagnosticEnabledRepo,
 } = require("../repositories/device.repository");
 
 async function createUserWithLicense(req, res) {
@@ -173,6 +174,32 @@ async function deleteDevice(req, res) {
   }
 }
 
+async function setDeviceDiagnosticEnabled(req, res) {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (!Number.isFinite(id)) {
+      return res.status(400).json({ ok: false, error: "invalid_id" });
+    }
+
+    const enabled = req.body?.enabled;
+    if (typeof enabled !== "boolean") {
+      return res.status(400).json({ ok: false, error: "enabled_boolean_required" });
+    }
+
+    const updated = await setDeviceDiagnosticEnabledRepo(id, enabled);
+    if (!updated) {
+      return res.status(404).json({ ok: false, error: "device_not_found" });
+    }
+
+    return res.json({ ok: true, data: updated });
+  } catch (error) {
+    return res.status(500).json({
+      ok: false,
+      error: error.message,
+    });
+  }
+}
+
 module.exports = {
   createUserWithLicense,
   checkLicense,
@@ -181,4 +208,5 @@ module.exports = {
   toggleLicense,
   toggleDevice,
   deleteDevice,
+  setDeviceDiagnosticEnabled,
 };
