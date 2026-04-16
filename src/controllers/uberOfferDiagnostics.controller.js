@@ -104,11 +104,9 @@ async function reviewOfferFailureDiagnostic(req, res) {
 
     const note = normalizeString(req.body?.note, 2000);
     const updated = await markUberOfferFailureReviewed(id, note);
-    if (!updated) {
-      return res.status(404).json({ ok: false, error: "diagnostic_not_found" });
-    }
-
-    return res.json({ ok: true, data: updated });
+    // Respuesta estable para el panel/cliente: marcar revisado es idempotente.
+    // Si no existe el registro (o ya fue borrado), no se considera error.
+    return res.json({ ok: true, data: updated || null });
   } catch (error) {
     return res.status(500).json({
       ok: false,
@@ -157,4 +155,3 @@ module.exports = {
   deleteOfferFailureDiagnostic,
   deleteReviewedOfferFailureDiagnostics,
 };
-
